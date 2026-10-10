@@ -1,0 +1,32 @@
+{
+  "schema_version": "0.1",
+  "checked_at": "2026-09-28T14:19:41.446937+07:00",
+  "structural_validation": "PASS",
+  "counts": {
+    "laptops": 7,
+    "offers": 8,
+    "students": 0,
+    "ratings": 0,
+    "assignments": 0,
+    "source_checks": 9,
+    "issues": 5
+  },
+  "verified_configurations": 0,
+  "verified_offers": 0,
+  "errors": [],
+  "warnings": [
+    "Draft/quarantined rows are collection work only; exclude them from survey assignments and model data.",
+    "Working pilot catalogue target: 40 verified configurations; currently 0.",
+    "Manual review must confirm truth of specs, new condition, source permissions, price validity and second-check coverage; this validator cannot certify those facts.",
+    "Candidate balancing, exposure priority, lowest eligible offer selection, frozen snapshot integrity and study approval are later gates, not certified by this scaffold validator."
+  ],
+  "sha256": {
+    "data/assignments.csv": "aa74a14579f99598a61ff577be84fada5d7e83586c3ac99505f808153a1639b1",
+    "data/issues.csv": "37ebea2c07681c27033365e787c08a69dec71a0d43be52181549b5b8cc207bd8",
+    "data/laptops.csv": "8e1511e1624d54b44238bbdb2d5a5c7c78e8d92b43ab264c9c361ff6e2ae2701",
+    "data/offers.csv": "4af99ad48ebbfb54f64528f17c617fb5e6302f78e4a8430bdbbf708df4616e49",
+    "data/ratings.csv": "4db53db20705de0fb7cfb8685ab9ab3a83e72d571db9c9816e7f76c486fffe15",
+    "data/source_checks.csv": "04053880b1d3d1214f1865d20477e148863672d06fcf3bff887c181150aa8a42",
+    "data/students.csv": "f7897587bdfb43b0e9fd04efcdce2f598af936b7cd5f9feee2bfd0ddfcfa66e9"
+  }
+}

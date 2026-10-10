@@ -1,0 +1,703 @@
+{
+  "laptops": {
+    "primary_key": "configuration_id",
+    "fields": [
+      {
+        "name": "configuration_id",
+        "type": "text",
+        "required": true,
+        "description": "Stable project ID such as LAP0001; never a predictor."
+      },
+      {
+        "name": "brand",
+        "type": "text",
+        "required": true,
+        "description": "Manufacturer name."
+      },
+      {
+        "name": "model",
+        "type": "text",
+        "required": true,
+        "description": "Readable model name; not enough alone to identify a configuration."
+      },
+      {
+        "name": "manufacturer_sku",
+        "type": "text",
+        "required": false,
+        "description": "Exact manufacturer part number including suffix; retailer inventory code belongs in offers."
+      },
+      {
+        "name": "cpu_model",
+        "type": "text",
+        "required": false,
+        "description": "Exact delivered CPU as sourced; nominal, never an invented performance tier."
+      },
+      {
+        "name": "gpu_model",
+        "type": "text",
+        "required": false,
+        "description": "Delivered graphics description; preserve both GPUs if listed."
+      },
+      {
+        "name": "gpu_type",
+        "type": "enum:integrated,dedicated",
+        "required": false,
+        "description": "Dedicated means a discrete GPU is present, even if integrated graphics also exist; blank if unverified."
+      },
+      {
+        "name": "gpu_vram_gb",
+        "type": "number:nonnegative",
+        "required": false,
+        "description": "Verified dedicated VRAM in GB; shared system memory is not dedicated VRAM."
+      },
+      {
+        "name": "ram_gb",
+        "type": "number:positive",
+        "required": false,
+        "description": "Delivered RAM in GB, not the supported maximum."
+      },
+      {
+        "name": "ram_type",
+        "type": "text",
+        "required": false,
+        "description": "Delivered memory technology as sourced."
+      },
+      {
+        "name": "storage_gb",
+        "type": "number:positive",
+        "required": false,
+        "description": "Advertised total internal capacity; use 1000 GB per advertised TB and keep raw text in evidence."
+      },
+      {
+        "name": "storage_type",
+        "type": "enum:ssd,hdd,ufs,emmc,mixed",
+        "required": false,
+        "description": "Verified delivered medium; do not equate UFS with an NVMe SSD."
+      },
+      {
+        "name": "screen_inches",
+        "type": "number:positive",
+        "required": false,
+        "description": "Display diagonal in inches."
+      },
+      {
+        "name": "display_resolution",
+        "type": "text",
+        "required": false,
+        "description": "Verified pixel dimensions such as 1920x1080; preserve unresolved labels in display_text."
+      },
+      {
+        "name": "display_text",
+        "type": "text",
+        "required": false,
+        "description": "Display identity including sourced panel type, resolution label, refresh and touch when known."
+      },
+      {
+        "name": "refresh_hz",
+        "type": "number:positive",
+        "required": false,
+        "description": "Verified refresh rate; blank does not mean 60 Hz."
+      },
+      {
+        "name": "weight_kg",
+        "type": "number:positive",
+        "required": false,
+        "description": "Verified configuration weight in kg; do not use a starting-at or shipping weight as exact."
+      },
+      {
+        "name": "weight_evidence_type",
+        "type": "enum:retailer_claim,manufacturer_spec,measured",
+        "required": false,
+        "description": "Evidence class for weight; no equivalence to independent measurement is implied."
+      },
+      {
+        "name": "evidence_ids",
+        "type": "ids",
+        "required": true,
+        "description": "Semicolon-separated source evidence IDs supporting these attributes."
+      },
+      {
+        "name": "record_status",
+        "type": "enum:draft,verified,quarantined,excluded",
+        "required": true,
+        "description": "Only verified records may enter a frozen survey catalogue."
+      },
+      {
+        "name": "review_notes",
+        "type": "text",
+        "required": false,
+        "description": "Unresolved fields and corrections; not a predictor."
+      }
+    ]
+  },
+  "offers": {
+    "primary_key": "offer_id",
+    "fields": [
+      {
+        "name": "offer_id",
+        "type": "text",
+        "required": true,
+        "description": "Immutable observation ID such as OFF0001; a later price needs a new row and ID."
+      },
+      {
+        "name": "configuration_id",
+        "type": "text",
+        "required": true,
+        "description": "Foreign key to laptops.configuration_id."
+      },
+      {
+        "name": "retailer",
+        "type": "text",
+        "required": true,
+        "description": "Canonical name: Gold One Computer, PTC Computer, or Beckie Khmer for this batch."
+      },
+      {
+        "name": "retailer_sku",
+        "type": "text",
+        "required": false,
+        "description": "Shop inventory code; never substitute for a manufacturer SKU."
+      },
+      {
+        "name": "price_usd",
+        "type": "number:positive",
+        "required": true,
+        "description": "Observed full purchase price in USD; no installments or zero-price placeholders."
+      },
+      {
+        "name": "currency",
+        "type": "enum:USD",
+        "required": true,
+        "description": "USD only in the approved catalogue."
+      },
+      {
+        "name": "price_text",
+        "type": "text",
+        "required": true,
+        "description": "Short original price notation preserving sale and list-price distinction."
+      },
+      {
+        "name": "source_url",
+        "type": "url",
+        "required": true,
+        "description": "Product URL where available; catalogue URL plus exact SKU anchor otherwise."
+      },
+      {
+        "name": "observed_date",
+        "type": "date",
+        "required": true,
+        "description": "Date this evidence was retrieved; does not assert that an indexed page was refreshed that day."
+      },
+      {
+        "name": "availability_text",
+        "type": "text",
+        "required": false,
+        "description": "Original stock wording; blank means no explicit stock statement."
+      },
+      {
+        "name": "condition",
+        "type": "enum:new,used,refurbished,unknown",
+        "required": true,
+        "description": "New condition needs evidence; a normal retail listing alone is not explicit confirmation."
+      },
+      {
+        "name": "condition_evidence_id",
+        "type": "text",
+        "required": false,
+        "description": "Evidence ID supporting a new-condition decision; required for verified offers."
+      },
+      {
+        "name": "purchase_type",
+        "type": "enum:outright,installment_only,unknown",
+        "required": true,
+        "description": "Full-price purchase basis; retain installment-only leads in the issue log, not eligible offers."
+      },
+      {
+        "name": "delivered_os",
+        "type": "text",
+        "required": false,
+        "description": "Verified delivered OS for this particular offer; OS can differ between shops for the same hardware."
+      },
+      {
+        "name": "snapshot_version",
+        "type": "text",
+        "required": true,
+        "description": "Collection version, initially collection_2026-09-28_v0; this is not yet a frozen survey snapshot."
+      },
+      {
+        "name": "evidence_id",
+        "type": "text",
+        "required": true,
+        "description": "Foreign key to source_checks.evidence_id."
+      },
+      {
+        "name": "offer_status",
+        "type": "enum:draft,verified,quarantined,excluded",
+        "required": true,
+        "description": "Only verified eligible offers may be selected for a survey."
+      },
+      {
+        "name": "review_notes",
+        "type": "text",
+        "required": false,
+        "description": "Unresolved offer issues; not a predictor."
+      }
+    ]
+  },
+  "students": {
+    "primary_key": "participant_id",
+    "fields": [
+      {
+        "name": "participant_id",
+        "type": "text",
+        "required": true,
+        "description": "Anonymous participant code; no name, email, phone or university ID."
+      },
+      {
+        "name": "study_phase",
+        "type": "enum:pilot,main",
+        "required": true,
+        "description": "Keep pilot and main analysis separate."
+      },
+      {
+        "name": "protocol_version",
+        "type": "text",
+        "required": true,
+        "description": "Instrument and consent protocol version in force at collection."
+      },
+      {
+        "name": "consent_status",
+        "type": "enum:consented,withdrawn,declined",
+        "required": true,
+        "description": "Administrative status; only consented records can provide usable feedback."
+      },
+      {
+        "name": "adult_confirmed",
+        "type": "boolean",
+        "required": true,
+        "description": "1 when adult participation criterion is confirmed; 0 otherwise."
+      },
+      {
+        "name": "profile_recorded_at",
+        "type": "datetime",
+        "required": true,
+        "description": "ISO 8601 timestamp with timezone; freeze profile before assignment."
+      },
+      {
+        "name": "budget_usd",
+        "type": "number:positive",
+        "required": true,
+        "description": "Mandatory maximum USD budget."
+      },
+      {
+        "name": "tasks_json",
+        "type": "json_array",
+        "required": true,
+        "description": "Student-selected or stated tasks as a JSON array of strings; questionnaire vocabulary awaits pilot."
+      },
+      {
+        "name": "software_names",
+        "type": "text",
+        "required": false,
+        "description": "Optional stated software; advisory only and not automatic compatibility requirements."
+      },
+      {
+        "name": "major",
+        "type": "text",
+        "required": false,
+        "description": "Optional descriptive major; excluded from hardware rules and current model feature plan."
+      },
+      {
+        "name": "min_ram_gb",
+        "type": "number:positive",
+        "required": false,
+        "description": "Explicit mandatory RAM minimum; blank means not specified."
+      },
+      {
+        "name": "min_storage_gb",
+        "type": "number:positive",
+        "required": false,
+        "description": "Explicit mandatory storage minimum; blank means not specified."
+      },
+      {
+        "name": "max_weight_kg",
+        "type": "number:positive",
+        "required": false,
+        "description": "Explicit mandatory weight ceiling; blank means not specified."
+      },
+      {
+        "name": "required_gpu_type",
+        "type": "enum:integrated,dedicated",
+        "required": false,
+        "description": "Explicit mandatory GPU type; blank means not specified."
+      },
+      {
+        "name": "required_os",
+        "type": "text",
+        "required": false,
+        "description": "Explicit delivered-OS requirement; no automatic OS compatibility inference."
+      },
+      {
+        "name": "desired_ram_gb",
+        "type": "number:positive",
+        "required": false,
+        "description": "Soft desired RAM target, separate from min_ram_gb."
+      },
+      {
+        "name": "desired_storage_gb",
+        "type": "number:positive",
+        "required": false,
+        "description": "Soft desired storage target, separate from min_storage_gb."
+      },
+      {
+        "name": "desired_max_weight_kg",
+        "type": "number:positive",
+        "required": false,
+        "description": "Soft preferred maximum weight, separate from max_weight_kg."
+      },
+      {
+        "name": "preferred_screen_inches",
+        "type": "number:positive",
+        "required": false,
+        "description": "Soft preferred display diagonal."
+      },
+      {
+        "name": "preferred_gpu_type",
+        "type": "enum:integrated,dedicated",
+        "required": false,
+        "description": "Soft desired GPU type; blank means unknown or unspecified."
+      },
+      {
+        "name": "importance_savings",
+        "type": "integer:0:5",
+        "required": true,
+        "description": "Preference importance; zero is inactive."
+      },
+      {
+        "name": "importance_ram",
+        "type": "integer:0:5",
+        "required": true,
+        "description": "RAM preference importance; zero is inactive."
+      },
+      {
+        "name": "importance_storage",
+        "type": "integer:0:5",
+        "required": true,
+        "description": "Storage preference importance; zero is inactive."
+      },
+      {
+        "name": "importance_weight",
+        "type": "integer:0:5",
+        "required": true,
+        "description": "Portability preference importance; zero is inactive."
+      },
+      {
+        "name": "importance_screen",
+        "type": "integer:0:5",
+        "required": true,
+        "description": "Screen preference importance; zero is inactive."
+      },
+      {
+        "name": "importance_gpu",
+        "type": "integer:0:5",
+        "required": true,
+        "description": "GPU preference importance; zero is inactive."
+      }
+    ]
+  },
+  "ratings": {
+    "primary_key": "rating_id",
+    "fields": [
+      {
+        "name": "rating_id",
+        "type": "text",
+        "required": true,
+        "description": "Unique observation ID."
+      },
+      {
+        "name": "assignment_id",
+        "type": "text",
+        "required": true,
+        "description": "Foreign key to the exact neutral card assignment."
+      },
+      {
+        "name": "participant_id",
+        "type": "text",
+        "required": true,
+        "description": "Foreign key to students; must match the assignment."
+      },
+      {
+        "name": "configuration_id",
+        "type": "text",
+        "required": true,
+        "description": "Exact configuration judged; must match both offer and assignment."
+      },
+      {
+        "name": "offer_id",
+        "type": "text",
+        "required": true,
+        "description": "Exact dated offer shown, never a subsequently refreshed price."
+      },
+      {
+        "name": "snapshot_version",
+        "type": "text",
+        "required": true,
+        "description": "Must match the assignment and offer snapshot."
+      },
+      {
+        "name": "rating_status",
+        "type": "enum:rated,skipped,unable_to_judge",
+        "required": true,
+        "description": "Skips and unable-to-judge responses are missing feedback."
+      },
+      {
+        "name": "suitability_rating",
+        "type": "integer:1:5",
+        "required": false,
+        "description": "Required only for rated responses; blank otherwise; no rule-generated labels."
+      },
+      {
+        "name": "display_order",
+        "type": "integer:1:15",
+        "required": true,
+        "description": "Shown position, copied from assignment."
+      },
+      {
+        "name": "rated_at",
+        "type": "datetime",
+        "required": true,
+        "description": "ISO 8601 timestamp with timezone."
+      },
+      {
+        "name": "comment",
+        "type": "text",
+        "required": false,
+        "description": "Optional participant comment; never a predictive feature."
+      }
+    ]
+  },
+  "assignments": {
+    "primary_key": "assignment_id",
+    "fields": [
+      {
+        "name": "assignment_id",
+        "type": "text",
+        "required": true,
+        "description": "Unique neutral-card assignment ID."
+      },
+      {
+        "name": "participant_id",
+        "type": "text",
+        "required": true,
+        "description": "Foreign key to students."
+      },
+      {
+        "name": "configuration_id",
+        "type": "text",
+        "required": true,
+        "description": "Foreign key to laptops; no duplicate configurations per participant."
+      },
+      {
+        "name": "offer_id",
+        "type": "text",
+        "required": true,
+        "description": "Frozen selected offer; lowest verified eligible offer for that configuration under the protocol."
+      },
+      {
+        "name": "snapshot_version",
+        "type": "text",
+        "required": true,
+        "description": "Frozen snapshot identifier."
+      },
+      {
+        "name": "protocol_version",
+        "type": "text",
+        "required": true,
+        "description": "Assignment protocol version."
+      },
+      {
+        "name": "price_budget_band",
+        "type": "enum:le_0.60,gt_0.60_le_0.80,gt_0.80_le_1.00",
+        "required": true,
+        "description": "Band computed from observed offer price divided by participant budget."
+      },
+      {
+        "name": "selection_seed",
+        "type": "integer:0:2147483647",
+        "required": true,
+        "description": "Recorded selection seed; no seed chosen by looking at ratings."
+      },
+      {
+        "name": "exposure_count_before",
+        "type": "integer:0:2147483647",
+        "required": true,
+        "description": "Configuration assignment count immediately before this selection."
+      },
+      {
+        "name": "display_order",
+        "type": "integer:1:15",
+        "required": true,
+        "description": "Seeded randomized presentation order."
+      },
+      {
+        "name": "assigned_at",
+        "type": "datetime",
+        "required": true,
+        "description": "ISO 8601 timestamp with timezone."
+      },
+      {
+        "name": "card_version",
+        "type": "text",
+        "required": true,
+        "description": "Version of the identical neutral card fields and wording used."
+      }
+    ]
+  },
+  "source_checks": {
+    "primary_key": "evidence_id",
+    "fields": [
+      {
+        "name": "evidence_id",
+        "type": "text",
+        "required": true,
+        "description": "Unique reference used by laptop and offer rows."
+      },
+      {
+        "name": "source_url",
+        "type": "url",
+        "required": true,
+        "description": "Public page inspected; product-specific URL preferred."
+      },
+      {
+        "name": "page_locator",
+        "type": "text",
+        "required": true,
+        "description": "Product name, manufacturer SKU or shop code locating the facts."
+      },
+      {
+        "name": "retrieved_date",
+        "type": "date",
+        "required": true,
+        "description": "Date inspected through the retrieval service."
+      },
+      {
+        "name": "access_mode",
+        "type": "enum:retrieved_product_page,retrieved_catalogue,indexed_search_only,manual_page,manufacturer_page",
+        "required": true,
+        "description": "Distinguishes indexed evidence and live manual review; retrieval is not a stock confirmation."
+      },
+      {
+        "name": "facts_observed",
+        "type": "text",
+        "required": true,
+        "description": "Compact factual transcription, not a copy of the full webpage."
+      },
+      {
+        "name": "source_check_status",
+        "type": "enum:pending,checked,conflict",
+        "required": true,
+        "description": "Human verification status; automated transcription is pending."
+      },
+      {
+        "name": "checked_by",
+        "type": "text",
+        "required": false,
+        "description": "Collector/reviewer code, not a participant identity."
+      },
+      {
+        "name": "checked_at",
+        "type": "datetime",
+        "required": false,
+        "description": "Timezone-aware timestamp of actual manual check."
+      },
+      {
+        "name": "second_check_status",
+        "type": "enum:pending,passed,failed,not_selected",
+        "required": true,
+        "description": "Manual second pass; at least 20 percent of retained records across sources and price bands before freeze."
+      },
+      {
+        "name": "second_checked_by",
+        "type": "text",
+        "required": false,
+        "description": "Code of person carrying out the second manual pass; may be the solo researcher."
+      },
+      {
+        "name": "second_checked_at",
+        "type": "datetime",
+        "required": false,
+        "description": "Timestamp of that second pass; do not pre-fill."
+      },
+      {
+        "name": "evidence_file",
+        "type": "text",
+        "required": false,
+        "description": "Relative path to permitted screenshot or other retained evidence, if actually saved."
+      },
+      {
+        "name": "notes",
+        "type": "text",
+        "required": false,
+        "description": "Missing fields, discrepancies, retrieval limitations and verification actions."
+      }
+    ]
+  },
+  "issues": {
+    "primary_key": "issue_id",
+    "fields": [
+      {
+        "name": "issue_id",
+        "type": "text",
+        "required": true,
+        "description": "Unique audit event ID; retain history when resolving."
+      },
+      {
+        "name": "entity_type",
+        "type": "enum:configuration,offer,source,protocol",
+        "required": true,
+        "description": "What is affected."
+      },
+      {
+        "name": "entity_id",
+        "type": "text",
+        "required": true,
+        "description": "Configuration ID, offer ID, evidence ID or protocol section."
+      },
+      {
+        "name": "source_url",
+        "type": "url",
+        "required": false,
+        "description": "Source supporting the issue, where applicable."
+      },
+      {
+        "name": "logged_date",
+        "type": "date",
+        "required": true,
+        "description": "Date recorded."
+      },
+      {
+        "name": "issue_type",
+        "type": "text",
+        "required": true,
+        "description": "Short reason such as storage_conflict or invalid_price."
+      },
+      {
+        "name": "decision",
+        "type": "enum:pending,quarantined,excluded,resolved",
+        "required": true,
+        "description": "Current inclusion decision; resolution must describe evidence."
+      },
+      {
+        "name": "details",
+        "type": "text",
+        "required": true,
+        "description": "Observed conflict or reason for exclusion."
+      },
+      {
+        "name": "resolution",
+        "type": "text",
+        "required": false,
+        "description": "Evidence-backed resolution, blank while unresolved."
+      }
+    ]
+  }
+}

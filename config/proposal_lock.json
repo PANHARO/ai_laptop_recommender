@@ -1,0 +1,70 @@
+{
+  "title": "Personalized Laptop Recommendation System for Cambodian University Students",
+  "source_filename": "AI_project_proposal.docx",
+  "source_sha256": "ad82e8501a344cd44073f56e4e07ae60d41ed5822e83d2dbd0a18f6f76d79efd",
+  "methodology_changes": [],
+  "schema_version": "0.1",
+  "pilot_configuration_working_target": 40,
+  "main_configuration_target": [
+    150,
+    250
+  ],
+  "genuine_rating_target": [
+    500,
+    1000
+  ],
+  "main_complete_student_target": 50,
+  "rankers": [
+    "price",
+    "content",
+    "random_forest_regression",
+    "small_mlp_regression"
+  ],
+  "random_forest": {
+    "n_estimators": 310,
+    "criterion": "squared_error",
+    "bootstrap": true,
+    "seed": 42,
+    "max_depth": [
+      4,
+      8,
+      null
+    ],
+    "min_samples_leaf": [
+      3,
+      5,
+      10
+    ],
+    "max_features": [
+      0.5,
+      1.0
+    ]
+  },
+  "mlp": {
+    "hidden_units": [
+      33,
+      16
+    ],
+    "activation": "relu",
+    "dropout_after_first": 0.2,
+    "output": "linear",
+    "optimizer": "AdamW",
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001,
+    "batch_size": 16,
+    "max_epochs": 150,
+    "early_stopping_metric": "validation_mse",
+    "patience": 10,
+    "restore_best_weights": true,
+    "seed": 42
+  },
+  "evaluation": {
+    "test_student_fraction_approx": 0.2,
+    "development_group_folds": 5,
+    "primary_metric": "mean student NDCG@5",
+    "gain": "rating - 1",
+    "primary_cohort_min_valid_judgments": 10,
+    "bootstrap_paired_student_resamples": 2000
+  },
+  "status": "Collection scaffold only; no survey freeze, recruitment, training or evaluation performed."
+}
