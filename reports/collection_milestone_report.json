@@ -1,0 +1,345 @@
+{
+  "checked_at": "2026-10-15T16:41:38.901604+00:00",
+  "repository": "PANHARO/ai_laptop_recommender",
+  "base_commit": "0087b937fbc1891d14adf64ec77a62d6b59c4e32",
+  "feature_branch": "feat/laptop-collection-review",
+  "implementation_scope": "Public HTML or manual/authorized input -> ignored staging -> explicit human review -> existing canonical CSV schema.",
+  "methodology_changed": false,
+  "canonical_records_changed_by_implementation": false,
+  "protected_sha256": {
+    "config/proposal_lock.json": "b5756057de9396d7ff2c11a182c5489d41f351616c0c9594cc3bbcf5bbabff2a",
+    "config/schema.json": "24bbcd9bbdedb03144df60e3f9eee172871b7507de42488ae4fc51f86c76020a",
+    "data/assignments.csv": "5ed4edcc4fed78f736a31fa6cc9e759974b76b28b04bd0008957640758a96417",
+    "data/issues.csv": "f25b4020eac31bb2d5d817c44371f56b606a9e7cb8802282b3590827cff387bc",
+    "data/laptops.csv": "eed53c0dbd507adaa1c02d26a019e82a711355139fb1b4b85e4de80ef41e3c42",
+    "data/offers.csv": "b934e01bebe9e1765fe43cc02b4b5b39fe9862cf23b4449d8cbd9cfca7ff6da2",
+    "data/ratings.csv": "09fd0d94262fff5155044af88649040992349a5ef0a69b1458bdbc536558771a",
+    "data/source_checks.csv": "cecf6e048e41feb63bf820f77f3d608edfd10672c8d09e10394dc2ccabdcc6e3",
+    "data/students.csv": "6297f92f4e62c6b4e19dca500da181b9854509b9a824e616bb2f6c3d82a2f3d3",
+    "docs/DATA_DICTIONARY.md": "864605a268049d8150d6567199e36f26aeea1ad3e29a6548c265baf77abfb3df",
+    "scripts/check_validator.py": "765f63a0bac4fd877e5b80b24f6af0588050935fb6f7d0f000a623d07fcfe0e3",
+    "scripts/validate_data.py": "1af95b435f68ee2ec06eb65c1c098df4a773784a476514fb43b5769de6f2972f"
+  },
+  "verified_commands": [
+    {
+      "command": "python -m unittest discover -s tests -v",
+      "result": "PASS",
+      "tests": 37
+    },
+    {
+      "command": "python scripts/check_validator.py",
+      "result": "PASS",
+      "tests": 7
+    },
+    {
+      "command": "python scripts/validate_data.py",
+      "result": "PASS",
+      "errors": [],
+      "counts": {
+        "laptops": 7,
+        "offers": 8,
+        "students": 0,
+        "ratings": 0,
+        "assignments": 0,
+        "source_checks": 9,
+        "issues": 5
+      },
+      "verified_configurations": 0,
+      "verified_offers": 0
+    },
+    {
+      "command": "python -m compileall -q laptop_collection review_app.py",
+      "result": "PASS"
+    },
+    {
+      "command": "git diff --check",
+      "result": "PASS"
+    },
+    {
+      "command": "python -m laptop_collection review",
+      "result": "PASS: launched subprocess; local /_stcore/health returned 200 ok in the same runtime; server then stopped"
+    },
+    {
+      "command": "python -m laptop_collection collect --site all --limit 3 --max-pages 1",
+      "result": "PASS: two completed small public HTML runs; see live_runs"
+    },
+    {
+      "command": "python -m laptop_collection collect --site all --limit 1 --max-pages 1",
+      "result": "PASS: final transport regression smoke, one existing observation per source, zero new/overwritten observations"
+    }
+  ],
+  "live_runs": [
+    {
+      "run_id": "2026-10-15T161608.7335220000_00e413",
+      "started_at": "2026-10-15T16:16:08.733568+00:00",
+      "per_site": {
+        "goldone": {
+          "status": "completed",
+          "discovered": 3,
+          "extracted": 3,
+          "staged_new": 3,
+          "already_staged": 0,
+          "failed": [],
+          "policy_pages": [
+            {
+              "kind": "robots",
+              "url": "https://www.goldonecomputer.com/robots.txt",
+              "status": 200,
+              "sha256": "21ca5a10bd903e18b0aaa367402592de4344ae5557355e9a9523fa72452bc76b"
+            },
+            {
+              "kind": "terms",
+              "url": "https://www.goldonecomputer.com/index.php?route=information/information&information_id=4",
+              "status": 200,
+              "text_sha256": "358e59f6688b620e962315d283416fa8c6ca9267ece2760b67917b8b99875012"
+            }
+          ],
+          "retrieval": "public_html"
+        },
+        "ptc": {
+          "status": "completed",
+          "discovered": 3,
+          "extracted": 3,
+          "staged_new": 3,
+          "already_staged": 0,
+          "failed": [],
+          "policy_pages": [
+            {
+              "kind": "robots",
+              "url": "https://ptc-computer.com.kh/robots.txt",
+              "status": 404,
+              "sha256": "bfb3d7e438556a3cafe9fa4f636b916d5d2949013ff55f366293cfeaffc56da2"
+            },
+            {
+              "kind": "terms",
+              "url": "https://ptc-computer.com.kh/terms",
+              "status": 200,
+              "text_sha256": "80090c0eaa22221300dbefb2bb843091c61cc4ada1d7e0fc20b03fe6944238c5"
+            }
+          ],
+          "retrieval": "public_html"
+        },
+        "beckie": {
+          "status": "completed",
+          "discovered": 3,
+          "extracted": 3,
+          "staged_new": 3,
+          "already_staged": 0,
+          "failed": [],
+          "policy_pages": [
+            {
+              "kind": "robots",
+              "url": "https://www.beckie-khmer.com/robots.txt",
+              "status": 200,
+              "sha256": "e5c4b84484ee4216e9373be99380320c25dd94805f99f0a805846f087636553f"
+            },
+            {
+              "kind": "terms",
+              "url": "https://www.beckie-khmer.com/about-us?u",
+              "status": 200,
+              "text_sha256": "6e324010ad2e5a499cb1b2d48e8095fe0656c0646111b35397a0db2bbfbf01df"
+            }
+          ],
+          "retrieval": "public_html"
+        }
+      },
+      "finished_at": "2026-10-15T16:17:11.731039+00:00"
+    },
+    {
+      "run_id": "2026-10-15T163412.6722960000_00e413",
+      "started_at": "2026-10-15T16:34:12.672361+00:00",
+      "per_site": {
+        "goldone": {
+          "status": "completed",
+          "discovered": 3,
+          "extracted": 3,
+          "staged_new": 2,
+          "already_staged": 1,
+          "failed": [],
+          "policy_pages": [
+            {
+              "kind": "robots",
+              "url": "https://www.goldonecomputer.com/robots.txt",
+              "status": 200,
+              "sha256": "21ca5a10bd903e18b0aaa367402592de4344ae5557355e9a9523fa72452bc76b"
+            },
+            {
+              "kind": "terms",
+              "url": "https://www.goldonecomputer.com/index.php?route=information/information&information_id=4",
+              "status": 200,
+              "text_sha256": "358e59f6688b620e962315d283416fa8c6ca9267ece2760b67917b8b99875012"
+            }
+          ],
+          "retrieval": "public_html"
+        },
+        "ptc": {
+          "status": "completed",
+          "discovered": 3,
+          "extracted": 3,
+          "staged_new": 2,
+          "already_staged": 1,
+          "failed": [],
+          "policy_pages": [
+            {
+              "kind": "robots",
+              "url": "https://ptc-computer.com.kh/robots.txt",
+              "status": 404,
+              "sha256": "d73571f4f831c6de8a85ee8bedb1bbf9088e978a6fd4dbd82db59568c99e5c21"
+            },
+            {
+              "kind": "terms",
+              "url": "https://ptc-computer.com.kh/terms",
+              "status": 200,
+              "text_sha256": "80090c0eaa22221300dbefb2bb843091c61cc4ada1d7e0fc20b03fe6944238c5"
+            }
+          ],
+          "retrieval": "public_html"
+        },
+        "beckie": {
+          "status": "completed",
+          "discovered": 3,
+          "extracted": 3,
+          "staged_new": 1,
+          "already_staged": 2,
+          "failed": [],
+          "policy_pages": [
+            {
+              "kind": "robots",
+              "url": "https://www.beckie-khmer.com/robots.txt",
+              "status": 200,
+              "sha256": "e5c4b84484ee4216e9373be99380320c25dd94805f99f0a805846f087636553f"
+            },
+            {
+              "kind": "terms",
+              "url": "https://www.beckie-khmer.com/about-us?u",
+              "status": 200,
+              "text_sha256": "57259a5ab996181efb5b44459a600f1a836f6cda4a1da524cec2e096cb6dbc26"
+            }
+          ],
+          "retrieval": "public_html"
+        }
+      },
+      "finished_at": "2026-10-15T16:35:17.000303+00:00"
+    },
+    {
+      "run_id": "2026-10-15T163844.9724760000_00e413",
+      "started_at": "2026-10-15T16:38:44.972535+00:00",
+      "per_site": {
+        "goldone": {
+          "status": "completed",
+          "discovered": 1,
+          "extracted": 1,
+          "staged_new": 0,
+          "already_staged": 1,
+          "failed": [],
+          "policy_pages": [
+            {
+              "kind": "robots",
+              "url": "https://www.goldonecomputer.com/robots.txt",
+              "status": 200,
+              "sha256": "21ca5a10bd903e18b0aaa367402592de4344ae5557355e9a9523fa72452bc76b"
+            },
+            {
+              "kind": "terms",
+              "url": "https://www.goldonecomputer.com/index.php?route=information/information&information_id=4",
+              "status": 200,
+              "text_sha256": "358e59f6688b620e962315d283416fa8c6ca9267ece2760b67917b8b99875012"
+            }
+          ],
+          "retrieval": "public_html"
+        },
+        "ptc": {
+          "status": "completed",
+          "discovered": 1,
+          "extracted": 1,
+          "staged_new": 0,
+          "already_staged": 1,
+          "failed": [],
+          "policy_pages": [
+            {
+              "kind": "robots",
+              "url": "https://ptc-computer.com.kh/robots.txt",
+              "status": 404,
+              "sha256": "7e7b521075a51237b695dfe179f87e68865f3efc0ea31ba217bbdd948325271f"
+            },
+            {
+              "kind": "terms",
+              "url": "https://ptc-computer.com.kh/terms",
+              "status": 200,
+              "text_sha256": "80090c0eaa22221300dbefb2bb843091c61cc4ada1d7e0fc20b03fe6944238c5"
+            }
+          ],
+          "retrieval": "public_html"
+        },
+        "beckie": {
+          "status": "completed",
+          "discovered": 1,
+          "extracted": 1,
+          "staged_new": 0,
+          "already_staged": 1,
+          "failed": [],
+          "policy_pages": [
+            {
+              "kind": "robots",
+              "url": "https://www.beckie-khmer.com/robots.txt",
+              "status": 200,
+              "sha256": "e5c4b84484ee4216e9373be99380320c25dd94805f99f0a805846f087636553f"
+            },
+            {
+              "kind": "terms",
+              "url": "https://www.beckie-khmer.com/about-us?u",
+              "status": 200,
+              "text_sha256": "35473aa3f53d8cba37a3aabf76431f89876e5144afa30be10b5492ad10884d8d"
+            }
+          ],
+          "retrieval": "public_html"
+        }
+      },
+      "finished_at": "2026-10-15T16:39:41.391533+00:00"
+    }
+  ],
+  "blocked_sources_in_recorded_smokes": [],
+  "failed_product_retrievals_in_recorded_smokes": [],
+  "policy_notes": [
+    "Gold One robots excludes search/sort/filter/limit queries; permitted category/product paths were used.",
+    "PTC robots endpoint returned 404. Public purchase terms were inspected; missing robots is not affirmative permission.",
+    "Beckie robots had an empty Disallow. Footer-linked About/warranty page inspected.",
+    "No automation prohibition was found on the inspected pages. No separate access-terms link was discovered for Gold One or Beckie. Future restrictions require stopping automation/manual input."
+  ],
+  "local_development_queue": {
+    "pending": 14,
+    "distinct_source_urls": 9,
+    "human_approved": 0,
+    "committed_to_git": false,
+    "note": "Includes immutable payload revisions from parser development. A new checkout collects its own fresh batch; neither the SQLite queue nor raw retailer HTML is distributed."
+  },
+  "scale_test": {
+    "mode": "offline fixtures and mocked network only",
+    "candidate_count": 40,
+    "canonical_changes": 0,
+    "live_40_configuration_collection_performed": false
+  },
+  "ui_verification": {
+    "streamlit_apptest": "PASS: form render, Needs Review, refusal without explicit confirmations, approval in isolated fictional fixture workspace",
+    "local_server_startup": "PASS",
+    "browser_visual_inspection": "Not completed: remote browser could not connect to container loopback. No screenshot or browser layout validation claimed.",
+    "reference_design": "Dark bordered product card, price, retailer/SKUs, specs, orange status, direct source buttons and four review actions."
+  },
+  "remaining_manual_steps": [
+    "Checkout feature branch, create environment, collect a fresh three-per-site batch and launch reviewer.",
+    "Open each source/catalogue link, correct fields and supply supported exact manufacturer SKU, delivered hardware, full outright USD price and explicit new-condition evidence.",
+    "Leave unavailable/generic/Coming soon pages, unknown facts and contradictions Needs Review or Reject; never infer stock, condition or missing specifications.",
+    "Use seed-existing for historical offers and source-only leads including SRC0009; a new current price must be a fresh dated observation, not an edit to an old offer.",
+    "Reconcile SKU conflicts with documented facts; use separate hardware variant only when supported.",
+    "Expand batches toward 40 distinct verified configurations, then perform and record the existing at-least-20-percent second manual check.",
+    "Retain data/ and staging/ together locally for evidence/audit/recovery; review intended canonical changes before committing them."
+  ],
+  "outstanding_issues": [
+    "Automated extraction does not verify retailer truth, new condition, a manufacturer part number or current stock.",
+    "Some Beckie individual links return generic catalogue content; catalogue card evidence requires exact locator checks.",
+    "PTC can omit exact manufacturer SKUs or use starting-at weight; these remain blank rather than guessed.",
+    "Gold One Product Code may identify only a model family; title-shaped SKU guesses require human confirmation.",
+    "Only small live smoke batches were run; live pagination coverage and a 40-verified-configuration catalogue remain to be completed.",
+    "Second manual review coverage remains pending. Participant profiles, ratings, assignments, recruitment and survey remain untouched."
+  ]
+}
