@@ -286,6 +286,24 @@ class ReviewTests(WorkspaceCase):
 
 
 class DashboardTests(WorkspaceCase):
+    def test_skipped_is_findable_and_saved_checks_and_notes_are_restored(self):
+        from streamlit.testing.v1 import AppTest
+        c=self.candidate()
+        self.reviewer.review(c['candidate_id'],'skip',{},'TEST','Find the part number',
+                             dict(specifications=True, price=True),expected_revision=0)
+        with patch.dict(os.environ,{'LAPTOP_RECOMMENDER_ROOT':str(self.root)}):
+            at=AppTest.from_file(str(ROOT/'review_app.py')).run(timeout=30)
+            self.assertEqual(len(at.exception),0)
+            self.assertIn('skipped',at.multiselect[0].value)
+            self.assertEqual(next(w for w in at.text_area if w.label=='Review notes').value,'Find the part number')
+            self.assertTrue(next(w for w in at.checkbox if w.label=='I verified the full outright USD purchase price').value)
+            self.assertFalse(next(w for w in at.checkbox if w.label=='I verified explicit new condition evidence').value)
+            next(w for w in at.text_input if w.label=='Find a name or SKU').input('no matching item').run()
+            next(w for w in at.button if w.label=='Find skipped (1)').click().run(timeout=30)
+            self.assertEqual(len(at.exception),0)
+            self.assertEqual(at.multiselect[0].value,['skipped'])
+            self.assertEqual(next(w for w in at.selectbox if w.label=='Candidate').value,c['candidate_id'])
+
     def test_dashboard_needs_review_button_and_source_links(self):
         from streamlit.testing.v1 import AppTest
         c=self.candidate()

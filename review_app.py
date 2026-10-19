@@ -27,6 +27,8 @@ st.markdown('''<style>
 .spec-row{display:grid;grid-template-columns:180px 1fr;border-bottom:1px solid #25282c;padding:11px 0;font-size:14px;gap:18px}
 .spec-label{color:#9ea5b0}.unknown{color:#faab6d}.review-note{font-size:12px;color:#99a1ad;margin-top:18px;line-height:1.6}
 [data-testid="stBaseButton-secondary"],[data-testid="stBaseButton-primary"]{border-radius:30px!important}
+.st-key-review_feedback{position:fixed;bottom:1.5rem;right:1.5rem;width:min(560px,calc(100vw - 3rem));z-index:10000}
+.st-key-review_feedback [data-testid="stAlert"]{box-shadow:0 5px 24px #0008;border:1px solid #697080;background:#17191d}
 @media(max-width:650px){.review-card{padding:18px}.product-title{font-size:20px}.spec-row{grid-template-columns:110px 1fr}.block-container{padding-top:1rem}}
 </style>''', unsafe_allow_html=True)
 
@@ -38,9 +40,10 @@ except Exception as exc:
     st.error('Could not open the review workspace: ' + str(exc))
     st.stop()
 
+with st.container(key='review_feedback'):
+    feedback = st.empty()
 if st.session_state.get('flash'):
-    message = st.session_state.pop('flash')
-    st.success(message)
+    feedback.success(st.session_state.pop('flash'))
 
 st.caption('ITM-360  /  COLLECTION DESK')
 st.title('Build a catalogue you can verify')
@@ -56,9 +59,17 @@ for col, label, value in zip(columns, ['Awaiting review','Approved observations'
 with st.sidebar:
     st.subheader('Review queue')
     reviewer = st.text_input('Reviewer code', value='Ro')
-    retailer = st.selectbox('Retailer', ['All retailers','Gold One Computer','PTC Computer','Beckie Khmer'])
-    states = st.multiselect('Show decisions', ['pending','needs_review','skipped','approved','rejected'], default=['pending','needs_review'])
-    search = st.text_input('Find a name or SKU')
+    if st.button(f"Find skipped ({counts['skipped']})", disabled=not counts['skipped']):
+        st.session_state['queue_states'] = ['skipped']
+        st.session_state['queue_retailer'] = 'All retailers'
+        st.session_state['queue_search'] = ''
+        st.rerun()
+    retailer = st.selectbox('Retailer', ['All retailers','Gold One Computer','PTC Computer','Beckie Khmer'], key='queue_retailer')
+    if 'queue_states' not in st.session_state:
+        st.session_state['queue_states'] = ['pending','needs_review','skipped']
+    states = st.multiselect('Show decisions', ['pending','needs_review','skipped','approved','rejected'], key='queue_states')
+    search = st.text_input('Find a name or SKU', key='queue_search')
+    st.caption(f"{counts['skipped']} skipped · {counts['rejected']} rejected · {counts['approved']} approved. Use Show decisions to reopen a saved review.")
     st.caption('No network requests run when this page opens. Source buttons open the retailer in your browser.')
     with st.expander('Add a URL manually'):
         with st.form('manual_url'):
@@ -85,7 +96,7 @@ if not queue:
     st.stop()
 
 lookup = {c['candidate_id']:c for c in queue}
-selected = st.selectbox('Candidate', list(lookup), format_func=lambda i: (lookup[i]['fields'].get('full_name') or lookup[i]['fields'].get('retailer_sku') or i) + ' · ' + lookup[i]['fields']['retailer'] + ' · ' + lookup[i]['observed_date'])
+selected = st.selectbox('Candidate', list(lookup), format_func=lambda i: '[' + lookup[i]['state'].replace('_',' ') + '] ' + (lookup[i]['fields'].get('full_name') or lookup[i]['fields'].get('retailer_sku') or i) + ' · ' + lookup[i]['fields']['retailer'] + ' · ' + lookup[i]['observed_date'])
 candidate = lookup[selected]
 f = candidate['fields']
 esc = lambda v: html.escape(str(v or 'Unknown'))
@@ -126,6 +137,9 @@ if candidate['state'] in ('approved','rejected'):
     st.json(store.reviews(selected))
     st.stop()
 
+history = store.reviews(selected)
+last_review = history[-1] if history else {}
+saved_checks = last_review.get('confirmations', {})
 with st.form('review_' + selected + '_' + str(candidate['revision'])):
     edits = {}
     with st.expander('Edit product fields', expanded=False):
@@ -148,16 +162,17 @@ with st.form('review_' + selected + '_' + str(candidate['revision'])):
         edits['condition_evidence'] = st.text_area('Evidence that this exact product is new',value=f.get('condition_evidence',''),help='Quote the condition statement or record a documented retailer confirmation. No used label is insufficient.')
         edits['condition_evidence_url'] = st.text_input('New condition evidence URL',value=f.get('condition_evidence_url') or f['source_url'])
         confirmations = {
-            'new_condition':st.checkbox('I verified explicit new condition evidence'),
-            'manufacturer_sku':st.checkbox('I verified the actual manufacturer SKU, separate from shop SKU'),
-            'specifications':st.checkbox('I checked the exact delivered CPU, GPU, RAM, storage and display'),
-            'price':st.checkbox('I verified the full outright USD purchase price')}
+            'new_condition':st.checkbox('I verified explicit new condition evidence', value=saved_checks.get('new_condition', False)),
+            'manufacturer_sku':st.checkbox('I verified the actual manufacturer SKU, separate from shop SKU', value=saved_checks.get('manufacturer_sku', False)),
+            'specifications':st.checkbox('I checked the exact delivered CPU, GPU, RAM, storage and display', value=saved_checks.get('specifications', False)),
+            'price':st.checkbox('I verified the full outright USD purchase price', value=saved_checks.get('price', False))}
+        st.caption('Missing SKU or new-condition evidence? Save Needs Review. A long warranty or a separate used section alone does not confirm new condition.')
     with st.expander('Resolve duplicates or a documented hardware variant'):
         edits['resolution_notes'] = st.text_area('Resolution notes',value=f.get('resolution_notes',''))
         confirmations['confirm_existing_draft'] = st.checkbox('I explicitly confirm the matching draft and resolved its issues')
         confirmations['documented_variant'] = st.checkbox('This is a separately documented delivered hardware variant')
         edits['variant_evidence'] = st.text_area('Variant evidence (required for a separate hardware variant)',value=f.get('variant_evidence',''))
-    notes = st.text_area('Review notes',help='Record missing information, reason for rejection, or what needs another check.')
+    notes = st.text_area('Review notes', value=last_review.get('notes',''), help='Record missing information, reason for rejection, or what needs another check.')
     actions = st.columns(4)
     approve = actions[0].form_submit_button('✓ Approve',use_container_width=True)
     reject = actions[1].form_submit_button('✕ Reject',use_container_width=True)
@@ -168,9 +183,9 @@ if approve or reject or needs or skip:
     action = 'approve' if approve else 'reject' if reject else 'needs_review' if needs else 'skip'
     try:
         event = service.review(selected,action,edits,reviewer,notes,confirmations,expected_revision=candidate['revision'])
-        st.session_state['flash'] = 'Saved: ' + event['state'].replace('_',' ') + '. ' + ' '.join(event['notices'])
+        st.session_state['flash'] = 'Saved: ' + event['state'].replace('_',' ') + ' — ' + (f['full_name'] or selected) + '. ' + ' '.join(event['notices'])
         st.rerun()
     except (ValueError, OSError, RuntimeError) as exc:
-        st.error(str(exc))
+        feedback.error(str(exc))
 with st.expander('Review history'):
     st.json(store.reviews(selected))
