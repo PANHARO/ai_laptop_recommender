@@ -1,0 +1,40 @@
+{
+  "user_agent": "ITM360-LaptopResearch/0.1 (human-reviewed academic catalogue)",
+  "delay_seconds": 3.0,
+  "timeout_seconds": 20,
+  "retries": 2,
+  "max_pages": 8,
+  "max_response_bytes": 10000000,
+  "sources": {
+    "goldone": {
+      "retailer": "Gold One Computer",
+      "base_url": "https://www.goldonecomputer.com",
+      "hosts": ["goldonecomputer.com", "www.goldonecomputer.com"],
+      "mode": "public_html",
+      "listing_urls": ["https://www.goldonecomputer.com/index.php?route=product/category&path=58"],
+      "terms_urls": ["https://www.goldonecomputer.com/index.php?route=information/information&information_id=4"],
+      "reviewed_date": "2026-10-15",
+      "policy_note": "Robots allows public category/product paths but disallows search/sort/filter/limit queries. Footer-linked About page inspected; no automation prohibition found there and no separate terms link discovered. This is not affirmative retailer permission. Stop if restrictions change."
+    },
+    "ptc": {
+      "retailer": "PTC Computer",
+      "base_url": "https://ptc-computer.com.kh",
+      "hosts": ["ptc-computer.com.kh", "www.ptc-computer.com.kh"],
+      "mode": "public_html",
+      "listing_urls": ["https://ptc-computer.com.kh/category/laptops"],
+      "terms_urls": ["https://ptc-computer.com.kh/terms"],
+      "reviewed_date": "2026-10-15",
+      "policy_note": "Robots returned 404. Public footer-linked purchase terms inspected; no automated retrieval prohibition found. A missing robots file is not affirmative permission. Public HTML only; no private API, accounts, checkout or login."
+    },
+    "beckie": {
+      "retailer": "Beckie Khmer",
+      "base_url": "https://www.beckie-khmer.com",
+      "hosts": ["beckie-khmer.com", "www.beckie-khmer.com"],
+      "mode": "public_html",
+      "listing_urls": ["https://www.beckie-khmer.com/?cat=laptop"],
+      "terms_urls": ["https://www.beckie-khmer.com/about-us?u"],
+      "reviewed_date": "2026-10-15",
+      "policy_note": "Robots has an empty Disallow. Footer-linked About/warranty terms inspected; no automation prohibition found and no separate access terms discovered. Some detail pages may be unavailable; catalogue observations remain unverified staging records."
+    }
+  }
+}

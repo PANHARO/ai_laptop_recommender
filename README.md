@@ -2,14 +2,28 @@
 
 ITM-360 implementation, milestone 1. Prepared 28 September 2026 from the supplied `AI_project_proposal.docx`. The proposal is the source of truth. Its SHA-256 is recorded in `config/proposal_lock.json` so later work can identify the exact version used.
 
-This starter contains the dataset structure, a collection procedure, a first batch of sourced observations and a runnable validator. It does not complete the pilot catalogue. No research method has been changed, no participants have been recruited, and no model has been trained.
+This repository contains the dataset structure, public HTML collectors, a separate staging queue, a local Streamlit verification desk and a runnable validator. The collection milestone supports human review of extracted candidates; it does not complete the pilot catalogue. No research method has been changed, no participants have been recruited, and no model has been trained.
 
 ## Start here
 
-1. Extract this folder and open it in VS Code.
-2. Read `docs/COLLECTION_GUIDE.md`, then inspect `data/laptops.csv` and `data/offers.csv` together.
-3. Work through the pending evidence checks in `data/source_checks.csv` and the discrepancies in `data/issues.csv`.
-4. Run the command below from this folder after each collection batch. It uses only Python's standard library; no packages are required at this milestone.
+Open the repository folder in VS Code. Use Python 3.11 or newer. On Windows PowerShell, create a local environment and run the first batch without activating scripts:
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\python -m pip install -r requirements.txt
+.\.venv\Scripts\python -m laptop_collection collect --site all --limit 3
+.\.venv\Scripts\python -m laptop_collection review
+```
+
+On Linux/macOS, use `python3 -m venv .venv`, then use `.venv/bin/python` for the same commands. Open the localhost URL printed by Streamlit. Click **Open laptop source**, edit the fields and evidence, then choose **Approve**, **Reject**, **Needs Review** or **Skip**. Approval requires your explicit new-condition, exact-SKU, delivered-specification and outright-price checks. Missing information remains visible and cannot be silently completed.
+
+See [the collection and review workflow](docs/COLLECTION_WORKFLOW.md) for larger batches, manual URL imports, authorized exports, duplicate handling and recovery. [The access audit](docs/SOURCE_ACCESS_AUDIT.md) records what was inspected for each retailer. The existing [collection guide](docs/COLLECTION_GUIDE.md) and [data dictionary](docs/DATA_DICTIONARY.md) remain the canonical research rules.
+
+[Milestone verification results](reports/COLLECTION_MILESTONE.md) include actual per-site smoke counts, test results and outstanding manual checks.
+
+To queue the old CSV observations and source-only leads (including SRC0009) for inspection without visiting any website, run `python -m laptop_collection seed-existing`. These remain dated historical observations, not fresh price confirmations. The collected candidates and saved reviews live locally under ignored `staging/`; they are not automatically shared with GitHub.
+
+Run the existing validator after a review batch while the reviewer is stopped. The validator itself still uses only the Python standard library:
 
 ```bash
 python scripts/validate_data.py --write-report
@@ -74,7 +88,7 @@ The next hands-on batch is to verify the first ten complete configurations, incl
 
 The proposal leaves task vocabulary, handling an active preference with an unknown target, availability eligibility (for example check-stock or preorder), and exact OS matching vocabulary to protocol work. This scaffold records the underlying facts but does not choose those policies. The validator flags missing preference targets; it uses conservative exact OS matching only when checking an assignment. No survey assignments are generated here.
 
-Source access conditions must be checked before automating collection. This project starts with manually selected and reviewed records; it contains no crawler. Instructor approval and any required institutional review must precede recruitment, as specified in the proposal.
+Source access conditions must be checked before automating collection. The new optional collectors recheck public robots/terms pages, use bounded public HTML requests and keep every extraction unverified in staging. Human approval remains separate. Instructor approval and any required institutional review must precede recruitment, as specified in the proposal.
 
 ## Verification and limits
 

@@ -72,3 +72,9 @@ Pilot and main rows carry separate study-phase and protocol fields. After an ins
 - Discuss unresolved instrument and availability policies with Ro, then obtain the required study approvals before recruiting.
 
 The validator checks a subset of these mechanically. Human verification, institutional approval and permission to automate or publish remain separate factual gates from the proposal.
+
+## Semi automated collection and the local reviewer
+
+The implementation now provides three separate public HTML collectors and a local Streamlit reviewer. Use [COLLECTION_WORKFLOW.md](COLLECTION_WORKFLOW.md) for commands and [SOURCE_ACCESS_AUDIT.md](SOURCE_ACCESS_AUDIT.md) for the inspected access rules. Collection fills a separate staging queue, not these canonical CSVs. The rules above still govern inclusion, units, exact configurations, new condition, historical offers and the later pilot.
+
+Only an explicit complete human approval can create a verified configuration/offer. Needs Review and Reject record their evidence/issue decisions without creating a verified product. Skip changes the local queue only. Your source link is available on each card; use its exact SKU/shop locator when the evidence is a catalogue card rather than a reliable detail page.
