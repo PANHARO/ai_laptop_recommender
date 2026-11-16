@@ -18,7 +18,7 @@ def main():
     recover.add_argument("--output", type=Path, default=DEFAULT_CATALOGUE)
     ingest = commands.add_parser("import", help="Keep raw/normalized data and validation under ignored private/")
     ingest.add_argument("bundle", type=Path)
-    ingest.add_argument("--mapping", type=Path, default=ROOT / "config/pilot/itm360_import.json")
+    ingest.add_argument("--mapping", type=Path, default=ROOT / "config/pilot_import.json")
     ingest.add_argument("--catalogue", type=Path, default=DEFAULT_CATALOGUE)
     baseline = commands.add_parser("reproduce-price", help="Reproduce the budget-only ZIP result exactly")
     baseline.add_argument("bundle", type=Path)

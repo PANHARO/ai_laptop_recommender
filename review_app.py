@@ -125,7 +125,14 @@ if duplicate['kind'] in ('exact','conflict'):
     st.warning('Existing configuration: ' + duplicate['kind'] + ' · ' + ', '.join(r['configuration_id'] for r in duplicate['matches']))
 if candidate.get('origin') == 'existing_canonical':
     st.warning('Historical CSV observation. For a current price, collect or manually import a fresh dated observation; do not assume the old price is current.')
+history = store.reviews(selected)
+last_review = history[-1] if history else {}
+saved_checks = last_review.get('confirmations', {})
 with st.expander('Evidence and uncertainty', expanded=True):
+    if f.get('condition') == 'new' and saved_checks.get('new_condition'):
+        st.success('New condition is confirmed and saved. Check the remaining hardware or duplicate issues below.')
+    if last_review.get('notes') and candidate['state'] == 'needs_review':
+        st.info(last_review['notes'])
     if candidate.get('flags'):
         st.write('Original extraction flags: ' + ' · '.join(flag.replace('_',' ') for flag in candidate['flags']))
     st.caption('Raw listed price: ' + (f['price_text'] or 'Unknown'))
@@ -137,15 +144,13 @@ if candidate['state'] in ('approved','rejected'):
     st.json(store.reviews(selected))
     st.stop()
 
-history = store.reviews(selected)
-last_review = history[-1] if history else {}
-saved_checks = last_review.get('confirmations', {})
 with st.form('review_' + selected + '_' + str(candidate['revision'])):
     edits = {}
     with st.expander('Edit product fields', expanded=False):
         columns = st.columns(2)
         for i, key in enumerate(['full_name','brand','model','manufacturer_sku','retailer_sku','cpu_model','gpu_model','gpu_vram_gb','ram_gb','ram_type','storage_gb','screen_inches','display_resolution','display_text','refresh_hz','weight_kg','delivered_os','price_usd','price_text','availability_text','source_url']):
-            edits[key] = columns[i%2].text_input(key.replace('_',' ').title(), value=f.get(key,''))
+            label = 'Manufacturer SKU (optional)' if key == 'manufacturer_sku' else key.replace('_',' ').title()
+            edits[key] = columns[i%2].text_input(label, value=f.get(key,''))
         options = {
             'storage_type':['','ssd','hdd','ufs','emmc','mixed'],
             'gpu_type':['','integrated','dedicated'],
@@ -157,16 +162,16 @@ with st.form('review_' + selected + '_' + str(candidate['revision'])):
             value = f.get(key,'')
             edits[key] = columns[i%2].selectbox(key.replace('_',' ').title(),values,index=values.index(value) if value in values else 0)
     with st.expander('Evidence required for approval', expanded=True):
-        edits['manufacturer_sku_evidence'] = st.text_area('Manufacturer SKU evidence',value=f.get('manufacturer_sku_evidence',''),help='Record where the manufacturer part number is supported. BECKIE/LLS shop codes are separate.')
+        edits['manufacturer_sku_evidence'] = st.text_area('Manufacturer SKU evidence (optional)',value=f.get('manufacturer_sku_evidence',''),help='Record supporting evidence when a manufacturer part number is available; otherwise leave blank. BECKIE/LLS shop codes are separate.')
         edits['specification_evidence'] = st.text_area('Delivered specification evidence',value=f.get('specification_evidence',''))
         edits['condition_evidence'] = st.text_area('Evidence that this exact product is new',value=f.get('condition_evidence',''),help='Quote the condition statement or record a documented retailer confirmation. No used label is insufficient.')
         edits['condition_evidence_url'] = st.text_input('New condition evidence URL',value=f.get('condition_evidence_url') or f['source_url'])
         confirmations = {
             'new_condition':st.checkbox('I verified explicit new condition evidence', value=saved_checks.get('new_condition', False)),
-            'manufacturer_sku':st.checkbox('I verified the actual manufacturer SKU, separate from shop SKU', value=saved_checks.get('manufacturer_sku', False)),
             'specifications':st.checkbox('I checked the exact delivered CPU, GPU, RAM, storage and display', value=saved_checks.get('specifications', False)),
             'price':st.checkbox('I verified the full outright USD purchase price', value=saved_checks.get('price', False))}
-        st.caption('Missing SKU or new-condition evidence? Save Needs Review. A long warranty or a separate used section alone does not confirm new condition.')
+        st.caption('Manufacturer SKU is optional. Record it when available and leave it blank otherwise. Keep shop inventory codes separate; approval still requires the delivered hardware and evidence.')
+        st.caption('A long warranty or a separate used section alone does not confirm new condition.')
     with st.expander('Resolve duplicates or a documented hardware variant'):
         edits['resolution_notes'] = st.text_area('Resolution notes',value=f.get('resolution_notes',''))
         confirmations['confirm_existing_draft'] = st.checkbox('I explicitly confirm the matching draft and resolved its issues')
@@ -182,7 +187,11 @@ with st.form('review_' + selected + '_' + str(candidate['revision'])):
 if approve or reject or needs or skip:
     action = 'approve' if approve else 'reject' if reject else 'needs_review' if needs else 'skip'
     try:
-        event = service.review(selected,action,edits,reviewer,notes,confirmations,expected_revision=candidate['revision'])
+        document = last_review.get('condition_document')
+        if document and edits.get('condition_evidence_url') != document['source_url']:
+            document = None
+        event = service.review(selected,action,edits,reviewer,notes,confirmations,
+                               expected_revision=candidate['revision'], condition_document=document)
         st.session_state['flash'] = 'Saved: ' + event['state'].replace('_',' ') + ' — ' + (f['full_name'] or selected) + '. ' + ' '.join(event['notices'])
         st.rerun()
     except (ValueError, OSError, RuntimeError) as exc:

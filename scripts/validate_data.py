@@ -64,6 +64,8 @@ def normalized(value):
 
 def validate(root):
     schema = json.loads((root / 'config/schema.json').read_text(encoding='utf-8'))
+    policy_path = root / 'config/pilot_policy.json'
+    policy = json.loads(policy_path.read_text(encoding='utf-8')) if policy_path.exists() else {}
     errors, warnings, tables, by_id = [], [], {}, {}
     for name, spec in schema.items():
         path = root / 'data' / (name + '.csv')
@@ -101,7 +103,9 @@ def validate(root):
     seen = {}
     for row in tables['laptops']:
         rid = row.get('configuration_id', '')
-        fields = ['manufacturer_sku', 'cpu_model', 'gpu_model', 'ram_gb', 'storage_gb', 'storage_type', 'screen_inches', 'display_text']
+        # Manufacturer SKU is optional metadata. A verified configuration must
+        # still have a complete delivered-hardware identity for deduplication.
+        fields = ['brand', 'model', 'cpu_model', 'gpu_model', 'ram_gb', 'storage_gb', 'storage_type', 'screen_inches', 'display_text']
         signature = tuple(normalized(row.get(k) or '') for k in fields)
         if all(signature):
             if signature in seen:
@@ -153,10 +157,14 @@ def validate(root):
 
     for row in tables['students']:
         rid = row.get('participant_id', '')
+        pilot_profile = row.get('study_phase') == 'pilot'
         for weight, target in [('ram', 'desired_ram_gb'), ('storage', 'desired_storage_gb'), ('weight', 'desired_max_weight_kg'), ('screen', 'preferred_screen_inches'), ('gpu', 'preferred_gpu_type')]:
             n = number(row.get('importance_' + weight))
             if n is not None and n > 0 and not row.get(target):
-                warnings.append(f'{rid}: active {weight} importance has an unknown target; resolve in the questionnaire pilot, do not invent a value')
+                messages = errors if pilot_profile and policy.get('require_active_preference_target') else warnings
+                messages.append(f'{rid}: active {weight} importance requires a target; ask the participant, do not invent a value')
+        if pilot_profile and policy.get('os_eligibility_filter') is False and row.get('required_os'):
+            errors.append(f'{rid}: required_os must be blank under the confirmed pilot policy')
 
     assignment_configs, assignment_orders = set(), set()
     for row in tables['assignments']:
@@ -199,9 +207,11 @@ def validate(root):
             required_gpu = student.get('required_gpu_type')
             if required_gpu and laptop.get('gpu_type') != required_gpu:
                 errors.append(f'{rid}: mandatory GPU type is unverified or not matched')
-            # Conservative exact normalized OS match only. Compatibility aliases await protocol work.
+            # Legacy datasets retain their original OS rule. The confirmed
+            # pilot leaves required_os blank and applies no OS constraint.
             required_os = student.get('required_os')
-            if required_os and (not offer or normalized(offer.get('delivered_os') or '') != normalized(required_os)):
+            os_filter = policy.get('os_eligibility_filter', True) if student.get('study_phase') == 'pilot' else True
+            if os_filter and required_os and (not offer or normalized(offer.get('delivered_os') or '') != normalized(required_os)):
                 errors.append(f'{rid}: mandatory delivered OS needs an exact verified match')
 
     rated_assignments = set()

@@ -1,1 +1,4 @@
 .githooks/* text eol=lf
+# Preserve the original catalog bytes used in recorded SHA-256 provenance.
+data/* -text
+reports/**/*.html -text

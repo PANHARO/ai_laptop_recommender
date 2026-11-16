@@ -53,7 +53,7 @@ No title-only or same-price guess was promoted to a confirmed link.
 | LAP0006 | Quarantined, absent from survey |
 
 See [all card-to-offer links](card_offer_links.csv) and the participant-free
-`config/pilot/recovered_catalogue.json`. Offer snapshot identifiers are retained
+`data/pilot_catalogue.json`. Offer snapshot identifiers are retained
 exactly as stored; the later instrument version is recorded separately. This
 recovery does not assert that an immutable pre-recruitment freeze occurred, or
 that an October price remains current. No additional catalog file is needed.
@@ -137,7 +137,7 @@ models remain in ignored `private/itm360_pilot/`. The commit contains only code,
 participant-free catalog/provenance, dependencies and aggregate findings.
 The local Git pre-commit hook guards participant CSVs and local artifacts,
 including force-added files. The tracked participant CSV templates stay empty.
-Existing uncommitted collection/review work is preserved separately.
+Collection/review changes are included in the consolidated default branch.
 
 ## What is needed next
 
@@ -149,4 +149,4 @@ manufacture them. If restoring the task predictors is desired, supply an
 authorized, pseudonymous profile export with `participant_id` and the original
 `tasks_json` answers, aligned to this cleaned export. Keep that export local.
 
-For running/import details, see [PILOT_README.md](../../PILOT_README.md).
+For running/import details, see [the pilot guide](../../docs/PILOT.md).

@@ -77,7 +77,7 @@ Primary key: `participant_id`.
 | `min_storage_gb` | number:positive | No | Explicit mandatory storage minimum; blank means not specified. |
 | `max_weight_kg` | number:positive | No | Explicit mandatory weight ceiling; blank means not specified. |
 | `required_gpu_type` | enum:integrated,dedicated | No | Explicit mandatory GPU type; blank means not specified. |
-| `required_os` | text | No | Explicit delivered-OS requirement; no automatic OS compatibility inference. |
+| `required_os` | text | No | Legacy delivered-OS requirement. Blank in the confirmed pilot: no OS question or OS eligibility filter; delivered OS remains descriptive offer data. |
 | `desired_ram_gb` | number:positive | No | Soft desired RAM target, separate from min_ram_gb. |
 | `desired_storage_gb` | number:positive | No | Soft desired storage target, separate from min_storage_gb. |
 | `desired_max_weight_kg` | number:positive | No | Soft preferred maximum weight, separate from max_weight_kg. |

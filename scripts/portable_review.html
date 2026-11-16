@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Portable laptop review</title>
+<style>
+:root{color-scheme:light;font:16px system-ui,sans-serif;color:#172a35;background:#f2f5f6}*{box-sizing:border-box}body{margin:0}header{background:#123644;color:white;padding:24px max(20px,calc((100vw - 1120px)/2))}h1{font-size:26px;margin:0 0 8px}p{line-height:1.5}header p{margin:6px 0;color:#d6e5e9}main{max-width:1160px;margin:auto;padding:20px}.toolbar,.navigation,.links{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.toolbar{margin:16px 0}button,.file-button{font:inherit;background:#fff;border:1px solid #a8bbc2;border-radius:8px;padding:10px 15px;cursor:pointer;color:#143d4b}button.primary{background:#006a62;border-color:#006a62;color:white}button:disabled{opacity:.4;cursor:default}input,textarea,select{font:inherit;width:100%;border:1px solid #b4c4c9;border-radius:6px;padding:9px;background:white;color:#172a35}select{max-width:100%}label{display:block;font-size:14px;color:#34515e}label>input,label>textarea,label>select{margin-top:5px}textarea{min-height:90px;resize:vertical}.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.wide{grid-column:1/-1}.card{background:white;border:1px solid #d3dee2;border-radius:12px;padding:24px;margin:16px 0}.muted{color:#536e79;font-size:14px}.notice{background:#fff4d8;border-left:4px solid #cc9429;padding:12px 16px;line-height:1.5}.links a{display:inline-block;padding:9px 13px;background:#e9f3f5;border-radius:6px;color:#14546b;text-decoration:none}summary{cursor:pointer;font-weight:600;padding:12px 0}details{border-top:1px solid #e0e7ea;margin-top:15px}h2{font-size:23px;line-height:1.35;margin:10px 0}h3{margin:5px 0 18px}.checks label{display:flex;gap:10px;align-items:flex-start;margin:14px 0}.checks input{width:20px;height:20px;margin:0;flex-shrink:0}#status{min-height:24px;font-size:14px}#progress{font-weight:600}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.5 system-ui,sans-serif}#queue{flex:1;min-width:220px}#filter{width:180px}.bottom{margin:18px 0}#decision{max-width:300px}.error{color:#b32020}#storageWarning{display:none}input[type=file]{display:none}@media(max-width:650px){.grid{grid-template-columns:1fr}.card{padding:16px}.wide{grid-column:auto}header{padding:22px 20px}}
+</style></head><body>
+<header><h1>Portable laptop review</h1><p id="batchSummary"></p><p>Review on any laptop. No Python or venv needed.</p></header>
+<main>
+<div class="notice">Download your results regularly and before closing. Autosave is a backup within this browser; the downloaded JSON is what you send back. Product links need internet. Decisions stay in this file until imported into your project.</div>
+<div class="toolbar"><button class="primary" id="download">Download results</button><label class="file-button" for="load">Load saved results</label><input type="file" id="load" accept=".json,application/json"><span id="progress"></span></div>
+<div id="status" role="status" aria-live="polite"></div><p id="storageWarning" class="notice">Browser storage is unavailable. Download results before leaving this page.</p>
+<div class="navigation"><button id="prev">Previous</button><select id="queue" aria-label="Candidate"></select><button id="next">Next</button><select id="filter" aria-label="Filter"><option value="all">All items</option><option value="unreviewed">No decision yet</option><option value="approve">Approve</option><option value="needs_review">Needs Review</option><option value="reject">Reject</option><option value="skip">Skip</option></select></div>
+<div id="empty" class="card" hidden>No candidates match this filter.</div>
+<article id="review" class="card">
+<div id="meta" class="muted"></div><h2 id="title"></h2><p id="price"></p><div class="links"><a id="source" target="_blank" rel="noopener noreferrer">Open product source ↗</a><a id="catalogue" target="_blank" rel="noopener noreferrer">Open catalogue evidence ↗</a></div>
+<p class="muted">These are dated extracted observations. Check the exact delivered product. Keep unknown facts blank. Record a later source-check date in your notes.</p>
+<div id="duplicate" class="notice" hidden></div>
+<details open><summary>Product fields</summary><div id="fields" class="grid"></div></details>
+<details open><summary>Evidence and confirmations</summary><p class="muted">Manufacturer SKU is optional. Keep shop inventory codes separate. Warranty length and absence of a used label alone do not establish new condition.</p><div id="evidence" class="grid"></div><div id="checks" class="checks"></div></details>
+<details><summary>Duplicate or documented hardware variant</summary><p class="muted">Use these only when supported by evidence. Duplicate status is recalculated on import.</p><div id="resolutions" class="grid"></div><div id="duplicateChecks" class="checks"></div></details>
+<details><summary>Original extraction and flags</summary><pre id="original"></pre></details>
+<div class="grid bottom"><label>Reviewer code<input id="reviewer" placeholder="e.g. Ro"></label><label>Decision<select id="decision"><option value="">No decision yet</option><option value="approve">Approve</option><option value="needs_review">Needs Review</option><option value="reject">Reject</option><option value="skip">Skip</option></select></label><label class="wide">Review notes<textarea id="notes" placeholder="Missing facts, corrections, evidence references, and date you checked the source"></textarea></label></div>
+<p class="muted">Approval is a request for import and still needs the project's evidence, duplicate and schema checks. If a fact cannot be confirmed, select Needs Review.</p>
+</article>
+</main>
+<script id="batch" type="application/json">__BATCH_DATA__</script>
+<script>
+'use strict';
+const batch=JSON.parse(document.getElementById('batch').textContent), byId=new Map(batch.candidates.map(c=>[c.candidate_id,c]));
+const $=id=>document.getElementById(id), storageKey='laptop-portable-'+batch.batch_id;
+const actions=['approve','needs_review','reject','skip'];
+let drafts={},selected=batch.candidates[0].candidate_id,visible=[];
+const enums={storage_type:['','ssd','hdd','ufs','emmc','mixed'],gpu_type:['','integrated','dedicated'],weight_evidence_type:['','retailer_claim','manufacturer_spec','measured'],condition:['unknown','new','used','refurbished'],purchase_type:['unknown','outright','installment_only'],currency:['','USD']};
+const evidenceFields=['manufacturer_sku_evidence','specification_evidence','condition_evidence','condition_evidence_url'];
+const resolutionFields=['resolution_notes','variant_evidence'];
+const confirmationLabels={new_condition:'I verified explicit new-condition evidence for this listing',specifications:'I checked the exact delivered CPU, GPU, RAM, storage and display',price:'I verified the full outright USD purchase price',confirm_existing_draft:'I explicitly confirm the matching draft and resolved its issues',documented_variant:'This is a separately documented delivered hardware variant'};
+function labelFor(k){return ({manufacturer_sku:'Manufacturer SKU (optional)',retailer_sku:'Shop SKU',price_usd:'Price (USD)',ram_gb:'RAM (GB)',storage_gb:'Storage (GB)',weight_kg:'Weight (kg)',screen_inches:'Screen (inches)',gpu_vram_gb:'GPU VRAM (GB)',refresh_hz:'Refresh rate (Hz)'})[k]||k.replaceAll('_',' ').replace(/^./,x=>x.toUpperCase());}
+function status(message,error=false){$('status').textContent=message;$('status').className=error?'error':'';}
+function validateRows(rows){
+ if(!Array.isArray(rows))throw Error('Missing saved reviews.');
+ const seen=new Set();
+ for(const r of rows){
+  const c=byId.get(r.candidate_id);
+  if(!c||seen.has(r.candidate_id)||r.expected_revision!==c.revision)throw Error('Unknown, repeated or stale candidate.');
+  seen.add(r.candidate_id);
+  if(![...actions,''].includes(r.action)||typeof r.edits!=='object'||r.edits===null||Array.isArray(r.edits)||Object.entries(r.edits).some(([k,v])=>!batch.edit_fields.includes(k)||typeof v!=='string'))throw Error('Invalid fields or decision.');
+  if(typeof r.confirmations!=='object'||r.confirmations===null||Array.isArray(r.confirmations)||Object.entries(r.confirmations).some(([k,v])=>!(k in confirmationLabels)||typeof v!=='boolean'))throw Error('Invalid confirmations.');
+  if(typeof r.reviewer!=='string'||typeof r.notes!=='string'||typeof r.saved_at!=='string')throw Error('Invalid reviewer or notes.');
+ }
+ return Object.fromEntries(rows.map(r=>[r.candidate_id,r]));
+}
+try{const saved=localStorage.getItem(storageKey);if(saved)drafts=validateRows(JSON.parse(saved));}catch(e){$('storageWarning').style.display='block';status('Could not restore browser backup. Load a downloaded JSON if you have one.',true);}
+function draft(c){const saved=c.saved_review||{};if(!drafts[c.candidate_id])drafts[c.candidate_id]={candidate_id:c.candidate_id,expected_revision:c.revision,action:'',edits:Object.fromEntries(batch.edit_fields.map(k=>[k,c.fields[k]||''])),confirmations:{...(saved.confirmations||{})},reviewer:'Ro',notes:saved.notes||'',saved_at:new Date().toISOString()};return drafts[c.candidate_id];}
+function persist(){try{localStorage.setItem(storageKey,JSON.stringify(Object.values(drafts)));}catch(e){$('storageWarning').style.display='block';}progress();}
+function save(){const c=byId.get(selected);if(!c)return;const d=draft(c);for(const el of document.querySelectorAll('[data-field]'))d.edits[el.dataset.field]=el.value;for(const el of document.querySelectorAll('[data-check]'))d.confirmations[el.dataset.check]=el.checked;d.reviewer=$('reviewer').value;d.notes=$('notes').value;d.action=$('decision').value;d.saved_at=new Date().toISOString();persist();}
+function progress(){const rows=Object.values(drafts),n=rows.filter(r=>r.action).length;$('progress').textContent=n+' / '+batch.candidates.length+' decisions recorded';for(const option of $('queue').options){const c=byId.get(option.value),d=drafts[c.candidate_id];option.textContent=(batch.candidates.indexOf(c)+1)+'. '+(d?.action?'['+d.action.replaceAll('_',' ')+'] ':'')+(c.fields.full_name||c.candidate_id);}}
+function link(el,url){try{const u=new URL(url);if(u.protocol!=='https:'||u.username||u.password)throw Error();el.href=u.href;el.hidden=false;}catch(e){el.removeAttribute('href');el.hidden=true;}}
+function addField(key,parent,d){const label=document.createElement('label');label.textContent=labelFor(key);let el;if(enums[key]){el=document.createElement('select');const values=[...enums[key]];if(d.edits[key]&&!values.includes(d.edits[key]))values.push(d.edits[key]);for(const value of values){const option=document.createElement('option');option.value=value;option.textContent=value||'Unknown / blank';el.append(option);}}else el=document.createElement(key.endsWith('_evidence')||key==='resolution_notes'?'textarea':'input');el.dataset.field=key;el.value=d.edits[key]||'';el.addEventListener('input',save);label.append(el);parent.append(label);}
+function render(){
+ const filter=$('filter').value;visible=batch.candidates.filter(c=>filter==='all'||(filter==='unreviewed'?!drafts[c.candidate_id]?.action:drafts[c.candidate_id]?.action===filter));
+ if(!visible.some(c=>c.candidate_id===selected))selected=visible[0]?.candidate_id;
+ $('queue').replaceChildren();for(const c of visible){const o=document.createElement('option');o.value=c.candidate_id;$('queue').append(o);}
+ $('review').hidden=!selected;$('empty').hidden=!!selected;const index=visible.findIndex(c=>c.candidate_id===selected);$('prev').disabled=index<=0;$('next').disabled=index<0||index===visible.length-1;
+ if(!selected){progress();return;}
+ $('queue').value=selected;const c=byId.get(selected),d=draft(c);
+ $('meta').textContent=(batch.candidates.indexOf(c)+1)+' of '+batch.candidates.length+' · '+c.fields.retailer+' · Observed '+c.observed_date+' · '+c.candidate_id;
+ $('title').textContent=d.edits.full_name||c.fields.model||c.candidate_id;$('price').textContent=c.fields.price_text||'Listed price unknown';
+ link($('source'),d.edits.source_url);link($('catalogue'),c.listing_url||c.evidence_url);
+ const hint=c.duplicate_hint;$('duplicate').hidden=!hint||!['exact','conflict'].includes(hint.kind);$('duplicate').textContent=hint?'Existing configuration at export: '+hint.kind+' · '+hint.matches.join(', ')+'. Rechecked on import.':'';
+ for(const id of ['fields','evidence','resolutions','checks','duplicateChecks'])$(id).replaceChildren();
+ for(const k of batch.edit_fields)addField(k,$(evidenceFields.includes(k)?'evidence':resolutionFields.includes(k)?'resolutions':'fields'),d);
+ for(const [k,text] of Object.entries(confirmationLabels)){const label=document.createElement('label'),el=document.createElement('input');el.type='checkbox';el.dataset.check=k;el.checked=d.confirmations[k]===true;el.addEventListener('change',save);label.append(el,document.createTextNode(text));$(k==='confirm_existing_draft'||k==='documented_variant'?'duplicateChecks':'checks').append(label);}
+ $('original').textContent='Flags: '+(c.flags||[]).join(', ')+'\n\n'+JSON.stringify(c.original_fields||c.fields,null,2);
+ $('reviewer').value=d.reviewer;$('notes').value=d.notes;$('decision').value=d.action;progress();
+}
+function navigate(delta){save();const index=visible.findIndex(c=>c.candidate_id===selected);selected=visible[index+delta]?.candidate_id||selected;render();}
+$('prev').onclick=()=>navigate(-1);$('next').onclick=()=>navigate(1);
+$('queue').onchange=()=>{const id=$('queue').value;save();selected=id;render();};$('filter').onchange=()=>{save();render();};
+for(const id of ['reviewer','notes','decision'])$(id).addEventListener('input',save);
+$('download').onclick=()=>{save();const all=Object.values(drafts);if(all.some(r=>r.action&&!r.reviewer.trim())){status('Enter a reviewer code for each decision before downloading.',true);return;}
+ const result={format:batch.format,batch_id:batch.batch_id,exported_at:new Date().toISOString(),reviews:all.filter(r=>r.action),drafts:all.filter(r=>!r.action)};
+ const blob=new Blob([JSON.stringify(result,null,2)+'\n'],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='laptop-review-results-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);status('Results downloaded: '+result.reviews.length+' decisions and '+result.drafts.length+' unfinished drafts. Send this JSON back in chat.');};
+$('load').onchange=async()=>{const file=$('load').files[0];if(!file)return;try{const result=JSON.parse(await file.text());if(result.format!==batch.format||result.batch_id!==batch.batch_id)throw Error('This file belongs to a different export batch.');const incoming=validateRows([...(result.reviews||[]),...(result.drafts||[])]);if(!confirm('Load this saved file? It replaces the reviews currently shown in this browser.'))return;drafts=incoming;persist();render();status('Saved results loaded.');}catch(e){status('Could not load results: '+e.message,true);}finally{$('load').value='';}};
+window.addEventListener('beforeunload',()=>{save();});
+$('batchSummary').textContent=batch.candidates.length+' items awaiting review · '+Object.entries(batch.candidates.reduce((a,c)=>(a[c.site]=(a[c.site]||0)+1,a),{})).map(([site,n])=>site+': '+n).join(' · ');
+render();
+</script></body></html>

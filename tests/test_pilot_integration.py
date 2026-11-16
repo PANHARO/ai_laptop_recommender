@@ -180,10 +180,10 @@ class ImportPrivacyTests(unittest.TestCase):
                               ("renamed_export.csv", b"participant_id,status\nTEST,rated\n")):
             self.assertTrue(blocked_blob(path, content))
         self.assertFalse(blocked_blob("data/students.csv", b"participant_id,budget_usd\n"))
-        self.assertFalse(blocked_blob("config/pilot/itm360_import.json", b"{}"))
+        self.assertFalse(blocked_blob("config/pilot_import.json", b"{}"))
 
     def test_recovered_catalogue_has_only_verified_exact_links(self):
-        packet, cards = load_catalogue(ROOT / "config/pilot/recovered_catalogue.json")
+        packet, cards = load_catalogue(ROOT / "data/pilot_catalogue.json")
         self.assertEqual(len(cards), 51)
         self.assertNotIn("LAP0003", cards)
         self.assertNotIn("LAP0006", cards)

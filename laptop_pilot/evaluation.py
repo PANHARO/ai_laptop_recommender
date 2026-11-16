@@ -1,6 +1,5 @@
 """Student-held-out comparison. No participant identifiers leave private/."""
-from collections import Counter, defaultdict
-import hashlib
+from collections import defaultdict
 from itertools import product
 import json
 import os
@@ -18,7 +17,7 @@ import sklearn
 from .catalogue import sha256
 from .features import FoldPreprocessor
 from .importer import load_rows, private_path
-from .ranking import content_score, eligibility, ndcg, number, rank, student_weights
+from .ranking import content_score, ndcg, number, rank, student_weights
 
 SEED = 42
 METHODS = ("ascending_price", "weighted_content", "random_forest", "small_mlp")

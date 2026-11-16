@@ -21,7 +21,7 @@ from scripts.validate_data import validate
 
 FIXTURES = Path(__file__).parent/'fixtures'
 URL = 'https://www.goldonecomputer.com/index.php?route=product/product&product_id=fixture-not-real'
-CONFIRMED = dict(new_condition=True, manufacturer_sku=True, specifications=True, price=True)
+CONFIRMED = dict(new_condition=True, specifications=True, price=True)
 
 
 def fields():
@@ -92,8 +92,50 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(classify_duplicate(new,[old])['kind'],'exact')
         new['ram_gb']='16'
         self.assertEqual(classify_duplicate(new,[old])['kind'],'conflict')
+        new['ram_gb']='8.0'
         new['manufacturer_sku']=''
-        self.assertEqual(classify_duplicate(new,[old])['kind'],'missing_sku')
+        self.assertEqual(classify_duplicate(new,[old])['kind'],'exact')
+
+    def test_sku_free_matching_checks_optional_hardware_conflicts(self):
+        for key, old_value, new_value in [('ram_type', 'DDR5', 'DDR4'),
+                                           ('gpu_type', 'integrated', 'dedicated'),
+                                           ('gpu_vram_gb', '4', '8'),
+                                           ('weight_kg', '1.4', '1.8')]:
+            with self.subTest(field=key):
+                old = dict(fields(), manufacturer_sku='', **{key: old_value})
+                new = dict(fields(), manufacturer_sku='', **{key: new_value})
+                result = classify_duplicate(new, [old])
+                self.assertEqual(result['kind'], 'conflict')
+                self.assertIn(key, result['fields'])
+
+    def test_sku_free_identity_must_be_complete_and_unambiguous(self):
+        old = dict(fields(), manufacturer_sku='')
+        self.assertEqual(classify_duplicate(old, [old, dict(old)])['kind'], 'conflict')
+        for missing in ('', 'unknown', 'none', '?', 'not listed'):
+            with self.subTest(value=missing):
+                incomplete = dict(old, cpu_model=missing)
+                self.assertEqual(classify_duplicate(incomplete, [incomplete])['kind'], 'new')
+        different = dict(old, cpu_model='Intel N250')
+        self.assertEqual(classify_duplicate(different, [old])['kind'], 'new')
+
+    def test_known_sku_conflict_cannot_be_bypassed_by_hardware_fallback(self):
+        old = fields()
+        new = dict(old, ram_gb='16')
+        no_sku = dict(new, manufacturer_sku='')
+        result = classify_duplicate(new, [old, no_sku])
+        self.assertEqual(result['kind'], 'conflict')
+        self.assertEqual(result['matches'], [old])
+        self.assertEqual(classify_duplicate(old, [old, dict(old)])['kind'], 'conflict')
+
+    def test_matching_hardware_with_different_known_skus_needs_review(self):
+        old = fields()
+        new = dict(old, manufacturer_sku='DIFFERENT-PART')
+        self.assertEqual(classify_duplicate(new, [old])['kind'], 'conflict')
+
+    def test_missing_sku_does_not_flag_required_information(self):
+        candidate = make_candidate('goldone', 'Gold One Computer', URL,
+                                   dict(fields(), manufacturer_sku=''))
+        self.assertNotIn('missing_manufacturer_sku', candidate['flags'])
 
     def test_identity_keeps_actual_cpu_model_and_ignores_trademark_prose(self):
         old=fields();old['cpu_model']='Intel Core Ultra 7 255H'
@@ -147,28 +189,142 @@ class WorkspaceCase(unittest.TestCase):
 
 
 class ReviewTests(WorkspaceCase):
+    def test_explicit_same_sku_match_accepts_equivalent_display_prose(self):
+        first = self.approve(self.candidate())
+        c = self.candidate({'display_text':'FHD; non-touch', 'price_usd':'419'}, day='2026-10-16')
+        result = self.reviewer.review(c['candidate_id'],'approve',
+            {'resolution_notes':'FICTIONAL TEST: exact same manufacturer part and delivered hardware confirmed'},
+            'TEST',confirmations=dict(CONFIRMED,confirm_existing_draft=True),
+            matching_configuration_id=first['canonical_result']['configuration_id'])
+        self.assertEqual(result['canonical_result']['configuration_id'],first['canonical_result']['configuration_id'])
+
+    def test_explicit_match_refuses_known_hardware_conflict_and_missing_sku(self):
+        first = self.approve(self.candidate())
+        target = first['canonical_result']['configuration_id']
+        for change in ({'ram_gb':'16'}, {'display_text':'4K; non-touch'}, {'manufacturer_sku':''}):
+            c = self.candidate(change,day='2026-10-16')
+            with self.assertRaises(ReviewError):
+                self.reviewer.review(c['candidate_id'],'approve',
+                    {'resolution_notes':'FICTIONAL TEST: claimed match'},'TEST',
+                    confirmations=dict(CONFIRMED,confirm_existing_draft=True),matching_configuration_id=target)
+
+    def test_atomic_write_retries_transient_windows_lock_without_truncating_target(self):
+        target = self.root/'staging/locked-test.txt'
+        target.write_bytes(b'original')
+        original_replace = os.replace
+        attempts = []
+        def replace(source, destination):
+            attempts.append(1)
+            self.assertEqual(target.read_bytes(), b'original')
+            if len(attempts) < 3:
+                error = PermissionError('FICTIONAL Windows sharing lock')
+                error.winerror = 32
+                raise error
+            original_replace(source, destination)
+        with patch('laptop_collection.store.os.replace', side_effect=replace), patch('laptop_collection.store.time.sleep'):
+            atomic_bytes(target, b'completed')
+        self.assertEqual(target.read_bytes(), b'completed')
+        self.assertEqual(len(attempts), 3)
+
+    def test_atomic_write_preserves_target_when_windows_denial_persists(self):
+        target = self.root/'staging/denied-test.txt'
+        target.write_bytes(b'original')
+        error = PermissionError('FICTIONAL persistent Windows denial')
+        error.winerror = 5
+        with patch('laptop_collection.store.os.replace', side_effect=error), patch('laptop_collection.store.time.sleep'):
+            with self.assertRaises(PermissionError):
+                atomic_bytes(target, b'not-written')
+        self.assertEqual(target.read_bytes(), b'original')
+        self.assertFalse(list(target.parent.glob('.denied-test.txt*')))
+
+    def condition_document(self, candidate, supports=True):
+        import hashlib
+        path = self.root/'staging/evidence/fictional-condition.txt'
+        path.parent.mkdir(exist_ok=True)
+        path.write_text('FICTIONAL TEST: retailer confirms new condition')
+        return dict(evidence_file='staging/evidence/fictional-condition.txt',
+            sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+            source_url=candidate['fields']['condition_evidence_url'], received_date='2026-10-28',
+            facts_observed='FICTIONAL TEST: listed laptops are new', supports_new_condition=supports)
+
+    def test_condition_document_is_retained_and_linked_to_offer(self):
+        c = self.candidate()
+        document = self.condition_document(c)
+        event = self.approve(c, condition_document=document)
+        tables = self.store.canonical()
+        offer = next(r for r in tables['offers'] if r['offer_id'] == event['canonical_result']['offer_id'])
+        evidence = next(r for r in tables['source_checks'] if r['evidence_id'] == offer['condition_evidence_id'])
+        self.assertEqual(evidence['evidence_file'], document['evidence_file'])
+        self.assertEqual(evidence['retrieved_date'], '2026-10-28')
+        self.assertEqual(offer['observed_date'], '2026-10-15')
+        self.assertEqual(event['condition_document']['sha256'], document['sha256'])
+        self.assertEqual(evidence['second_check_status'], 'pending')
+        self.assertEqual(self.approve(c, condition_document=document)['event_id'], event['event_id'])
+
+    def test_changed_or_ambiguous_condition_document_cannot_approve(self):
+        c = self.candidate()
+        document = self.condition_document(c, supports=False)
+        with self.assertRaisesRegex(ReviewError, 'does not confirm new condition'):
+            self.approve(c, condition_document=document)
+        document['supports_new_condition'] = True
+        (self.root/document['evidence_file']).write_text('CHANGED FICTIONAL TEST')
+        with self.assertRaisesRegex(ReviewError, 'missing, changed'):
+            self.approve(c, condition_document=document)
+        self.assertEqual(self.store.get(c['candidate_id'])['state'], 'pending')
+
     def test_no_collection_or_unconfirmed_review_verifies(self):
         c=self.candidate()
-        for confirmation in ['new_condition','manufacturer_sku','specifications','price']:
+        for confirmation in ['new_condition','specifications','price']:
             f=dict(CONFIRMED);f[confirmation]=False
             with self.assertRaises(ReviewError):self.reviewer.review(c['candidate_id'],'approve',{},'TEST',confirmations=f)
         self.assertEqual(self.store.get(c['candidate_id'])['state'],'pending')
         for p in (self.root/'data').glob('*.csv'):self.assertEqual(p.read_bytes(),self.initial[p.name])
 
     def test_missing_information_and_shop_sku_block_approval(self):
-        for key in ['manufacturer_sku','cpu_model','storage_type','condition_evidence']:
+        for key in ['cpu_model','storage_type','condition_evidence']:
             with self.subTest(key=key):
                 c=self.candidate({key:''})
                 with self.assertRaises(ReviewError):self.approve(c)
+        c=self.candidate({'manufacturer_sku':'', 'manufacturer_sku_evidence':''})
+        previous_ids = {r['configuration_id'] for r in self.store.canonical()['laptops']}
+        approved=self.approve(c)
+        self.assertEqual(approved['state'],'approved')
+        self.assertNotIn(approved['canonical_result']['configuration_id'], previous_ids)
         c=self.candidate({'manufacturer_sku':'BECKIE12345'})
         with self.assertRaises(ReviewError):self.approve(c)
 
+    def test_sku_free_approval_reuses_hardware_and_preserves_available_sku_evidence(self):
+        first = self.approve(self.candidate({'manufacturer_sku':'', 'manufacturer_sku_evidence':''}))
+        second = self.approve(self.candidate({'manufacturer_sku':'', 'manufacturer_sku_evidence':'',
+                                              'price_usd':'429', 'price_text':'$429'}, day='2026-10-16'))
+        third = self.approve(self.candidate(day='2026-10-17'))
+        lid = first['canonical_result']['configuration_id']
+        self.assertEqual(second['canonical_result']['configuration_id'], lid)
+        self.assertEqual(third['canonical_result']['configuration_id'], lid)
+        self.assertNotEqual(first['canonical_result']['offer_id'], second['canonical_result']['offer_id'])
+        tables = self.store.canonical()
+        laptop = next(r for r in tables['laptops'] if r['configuration_id'] == lid)
+        self.assertEqual(laptop['manufacturer_sku'], '')
+        evidence = next(r for r in tables['source_checks']
+                        if r['evidence_id'] == third['canonical_result']['evidence_id'])
+        self.assertEqual(json.loads(evidence['facts_observed'])['manufacturer_sku'], fields()['manufacturer_sku'])
+        self.assertEqual(validate(self.root)['errors'], [])
+
+    def test_sku_free_optional_hardware_conflict_is_quarantined(self):
+        self.approve(self.candidate({'manufacturer_sku':''}))
+        old = self.store.canonical()
+        second = self.approve(self.candidate({'manufacturer_sku':'', 'ram_type':'DDR4'}))
+        self.assertEqual(second['state'], 'needs_review')
+        self.assertEqual(self.store.canonical()['laptops'], old['laptops'])
+        self.assertEqual(self.store.canonical()['offers'], old['offers'])
+
     def test_unknown_literal_and_invalid_optional_values_are_not_verified(self):
+        before = self.store.canonical()['laptops']
         c=self.candidate({'cpu_model':'Unknown'})
         with self.assertRaises(ReviewError):self.approve(c)
         c=self.candidate({'gpu_type':'super-fast'})
         with self.assertRaises(ReviewError):self.approve(c)
-        self.assertEqual(sum(r['record_status']=='verified' for r in self.store.canonical()['laptops']),0)
+        self.assertEqual(self.store.canonical()['laptops'], before)
 
     def test_documented_variant_requires_an_explicit_separate_review(self):
         first=self.approve(self.candidate());second=self.candidate({'ram_gb':'16','variant_evidence':'FIXTURE retailer documents delivered 16 GB upgrade','resolution_notes':'Distinct delivered memory option documented in fixture'})
@@ -317,14 +473,14 @@ class DashboardTests(WorkspaceCase):
 
     def test_dashboard_approval_requires_checkboxes_and_then_commits(self):
         from streamlit.testing.v1 import AppTest
-        c=self.candidate()
+        c=self.candidate({'manufacturer_sku':'', 'manufacturer_sku_evidence':''})
         with patch.dict(os.environ,{'LAPTOP_RECOMMENDER_ROOT':str(self.root)}):
             at=AppTest.from_file(str(ROOT/'review_app.py')).run(timeout=30)
             next(w for w in at.button if w.label=='✓ Approve').click().run(timeout=30)
             self.assertGreater(len(at.error),0)
             self.assertEqual(self.store.get(c['candidate_id'])['state'],'pending')
             for checkbox in at.checkbox:
-                if checkbox.label in ['I verified explicit new condition evidence','I verified the actual manufacturer SKU, separate from shop SKU','I checked the exact delivered CPU, GPU, RAM, storage and display','I verified the full outright USD purchase price']:
+                if checkbox.label in ['I verified explicit new condition evidence','I checked the exact delivered CPU, GPU, RAM, storage and display','I verified the full outright USD purchase price']:
                     checkbox.check()
             next(w for w in at.button if w.label=='✓ Approve').click().run(timeout=30)
             self.assertEqual(len(at.exception),0)

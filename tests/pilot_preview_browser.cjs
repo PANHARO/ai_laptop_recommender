@@ -1,0 +1,62 @@
+// Run with Node and a local Playwright module path; all answers are QA only.
+const path=require('node:path');
+const fs=require('node:fs');
+const assert=require('node:assert/strict');
+const crypto=require('node:crypto');
+const {pathToFileURL}=require('node:url');
+const {chromium}=require(process.argv[2]?path.resolve(process.argv[2]):'playwright');
+const root=path.resolve(__dirname,'..');
+const out=path.join(root,'staging/pilot-preview-qa');fs.mkdirSync(out,{recursive:true});
+const hash=()=>Object.fromEntries(fs.readdirSync(path.join(root,'data')).filter(x=>x.endsWith('.csv')).map(x=>[x,crypto.createHash('sha256').update(fs.readFileSync(path.join(root,'data',x))).digest('hex')]));
+(async()=>{
+ const before=hash();const browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
+ try{
+  const context=await browser.newContext({acceptDownloads:true,viewport:{width:1440,height:1000}});
+  const page=await context.newPage(),errors=[],network=[];
+  page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(/^https?:/.test(r.url()))network.push(r.url());});
+  const url=pathToFileURL(path.join(root,'reports/pilot_2026-10-29/preview/START_PILOT_PREVIEW.html')).href;
+  await page.goto(url);assert.equal(await page.locator('#config-count').innerText(),'51');
+  await page.screenshot({path:path.join(out,'desktop-intro.png'),fullPage:true});
+  await page.locator('[data-go=profile]').first().click();
+  await page.locator('#age').selectOption('under18');await page.locator('#profileform button[type=submit]').click();
+  assert.match(await page.locator('#profileerror').innerText(),/adults/);
+  await page.locator('#age').selectOption('18–20');await page.locator('#student').selectOption('yes');await page.locator('#year').selectOption('Year 2');await page.locator('#consent').selectOption('decline');
+  await page.locator('#profileform button[type=submit]').click();assert.match(await page.locator('#profileerror').innerText(),/declined/);
+  await page.locator('#consent').selectOption('agree');await page.locator('#budget').fill('1000000');
+  await page.getByLabel('Graphic design/photo editing',{exact:true}).check();
+  await page.getByLabel('3D modelling/rendering',{exact:true}).check();
+  for(const key of ['savings','ram','storage','weight','screen','gpu'])await page.locator('#importance_'+key).selectOption(key==='ram'?'3':'0');
+  await page.locator('#profileform button[type=submit]').click();assert.match(await page.locator('#profileerror').innerText(),/needs its target/);
+  await page.locator('#desired_ram_gb').fill('16');await page.locator('#profileform button[type=submit]').click();
+  assert.equal(await page.locator('#cards').isVisible(),true);assert.match(await page.locator('#position').innerText(),/of 51/);
+  assert.equal(await page.locator('select#required_os').count(),0);
+  const boundary=await page.evaluate(()=>{
+   const saved=profile;const c={ram_gb:'16',storage_gb:'512',weight_kg:'',gpu_type:'integrated',offers:[{price_usd:'500',delivered_os:'DOS'}]};
+   profile={budget_usd:500,min_ram_gb:16,min_storage_gb:512,required_gpu_type:''};const exact=matches(c);
+   profile.max_weight_kg=2;const unknownWeight=matches(c);delete profile.max_weight_kg;
+   profile.budget_usd=499;const overBudget=matches(c);profile=saved;
+   return {exact,unknownWeight,overBudget};
+  });assert.deepEqual(boundary,{exact:true,unknownWeight:false,overBudget:false});
+  await page.locator('[data-rating=skip]').click();assert.match(await page.locator('#ratingstatus').innerText(),/No numeric rating/);
+  await page.locator('[data-rating=unable]').click();assert.match(await page.locator('#ratingstatus').innerText(),/No numeric rating/);
+  await page.locator('[data-rating="4"]').click();assert.match(await page.locator('#ratingstatus').innerText(),/4 \/ 5/);
+  await page.screenshot({path:path.join(out,'desktop-card.png'),fullPage:true});
+  const stocks=await page.evaluate(()=>packet.cards.flatMap(c=>c.offers.map(o=>o.availability_text)));
+  assert(stocks.some(s=>/out of stock/i.test(s)));assert(stocks.some(s=>!s));assert(stocks.some(s=>/coming soon/i.test(s)));
+  const uncertain=await page.evaluate(()=>packet.cards.flatMap(c=>c.offers).filter(o=>o.freshness_status==='check_date_uncertain').length);assert.equal(uncertain,49);
+  await page.locator('#cardsearch').fill('NO_SUCH_TEST_MODEL');assert.equal(await page.locator('#empty').isVisible(),true);await page.locator('#clearsearch').click();
+  await page.locator('[data-step=feedback]').click();await page.locator('#wordingnotes').fill('AUTOMATED QA ONLY: wording test, not participant feedback.');
+  const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#download').click()]);const downloaded=path.join(out,'qa-feedback-not-research.json');await download.saveAs(downloaded);const feedback=JSON.parse(fs.readFileSync(downloaded,'utf8'));
+  assert.equal(feedback.kind,'pilot_design_feedback_not_participant_data');assert.equal(feedback.preview_version,'pilot_preview_2026-10-29_v1');
+  for(const k of ['profile','ratings','budget_usd','consent','age','year','tasks'])assert(!(k in feedback));
+  await page.locator('#reset').click();await page.locator('[data-step=cards]').click();assert.match(await page.locator('#ratingstatus').innerText(),/No practice response/);
+  await page.setViewportSize({width:390,height:844});await page.locator('[data-step=profile]').click();
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+  await page.screenshot({path:path.join(out,'mobile-profile.png'),fullPage:true});
+  await page.locator('[data-step=cards]').click();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+  await page.screenshot({path:path.join(out,'mobile-card.png'),fullPage:true});
+  assert.deepEqual(errors,[]);assert.deepEqual(network,[]);assert.deepEqual(hash(),before);
+  const report={result:'PASS',configurations:51,offers:60,uncertain_dated_offers:uncertain,checks:['adult/decline stop','active target required','inclusive budget and RAM/storage boundaries','unknown required weight fails','OS descriptive','all stock states retained','skip/unable have no number','feedback excludes practice data','mobile width','no remote requests','no canonical CSV writes'],page_errors:errors};
+  fs.writeFileSync(path.join(out,'result.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report,null,2));
+ }finally{await browser.close();}
+})().catch(e=>{console.error(e);process.exit(1);});

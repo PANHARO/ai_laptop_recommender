@@ -1,5 +1,6 @@
 """Map explicit human reviews to the unmodified canonical CSV schema."""
 import copy
+from datetime import date
 import hashlib
 import json
 from pathlib import Path
@@ -8,9 +9,10 @@ import shutil
 import tempfile
 
 from scripts.validate_data import check_type, validate
-from .models import (CORE_FIELDS, EDIT_FIELDS, HARDWARE_FIELDS, NUMERIC_FIELDS,
+from .models import (CORE_FIELDS, EDIT_FIELDS, HARDWARE_FIELDS, MISSING_VALUES, NUMERIC_FIELDS,
                      allowed_url, canonical_url, classify_duplicate, clean,
                      decimal_string, digest, now)
+from .models import identity_value
 
 
 class ReviewError(ValueError):
@@ -23,16 +25,16 @@ def allocate(rows, key, prefix):
 
 
 def assert_complete(fields, confirmations, source):
-    placeholders = {'','unknown','n/a','na','not sure','tbd','none','?','-','not provided','not listed'}
-    missing = [k for k in CORE_FIELDS if clean(fields.get(k)).casefold() in placeholders]
-    missing += [k for k in ('full_name', 'price_text', 'manufacturer_sku_evidence', 'specification_evidence', 'condition_evidence', 'condition_evidence_url') if not clean(fields.get(k))]
+    missing = [k for k in CORE_FIELDS if clean(fields.get(k)).casefold() in MISSING_VALUES]
+    missing += [k for k in ('full_name', 'price_text', 'specification_evidence', 'condition_evidence', 'condition_evidence_url') if not clean(fields.get(k))]
     if missing:
         raise ReviewError('Complete these fields with source evidence: ' + ', '.join(missing))
     if fields.get('condition') != 'new' or fields.get('purchase_type') != 'outright' or fields.get('currency') != 'USD':
         raise ReviewError('Approval requires verified new condition, an outright purchase price and USD currency.')
-    if not all(confirmations.get(k) is True for k in ('new_condition', 'specifications', 'manufacturer_sku', 'price')):
-        raise ReviewError('Explicitly confirm new condition, delivered specifications, manufacturer SKU and full purchase price.')
-    if re.match(r'(?:BECKIE\d+|LL[A-Z]-|LU[A-Z]+-)', fields['manufacturer_sku'], re.I):
+    required_confirmations = ('new_condition', 'specifications', 'price')
+    if not all(confirmations.get(k) is True for k in required_confirmations):
+        raise ReviewError('Explicitly confirm new condition, delivered specifications and full purchase price.')
+    if fields.get('manufacturer_sku') and re.match(r'(?:BECKIE\d+|LL[A-Z]-|LU[A-Z]+-)', fields['manufacturer_sku'], re.I):
         raise ReviewError('The manufacturer SKU appears to be a shop inventory ID. Keep it in shop SKU instead.')
     allowed_url(fields['source_url'], source)
     canonical_url(fields['condition_evidence_url'])
@@ -67,14 +69,20 @@ class Reviewer:
         return classify_duplicate(edits or candidate['fields'], self.store.canonical()['laptops'])
 
     def review(self, candidate_id, action, edits, reviewer, notes='', confirmations=None,
-               expected_revision=0, request_id=None):
+               expected_revision=0, request_id=None, condition_document=None,
+               matching_configuration_id=None):
         if action not in ('approve', 'reject', 'needs_review', 'skip'):
             raise ReviewError('Unknown review action.')
         if not clean(reviewer):
             raise ReviewError('Enter a reviewer code/name before saving a decision.')
         confirmations = confirmations or {}
-        key = request_id or digest(dict(candidate_id=candidate_id, revision=expected_revision,
-            action=action, edits=edits, reviewer=reviewer, notes=notes, confirmations=confirmations))
+        identity = dict(candidate_id=candidate_id, revision=expected_revision,
+            action=action, edits=edits, reviewer=reviewer, notes=notes, confirmations=confirmations)
+        if condition_document is not None:
+            identity['condition_document'] = condition_document
+        if matching_configuration_id is not None:
+            identity['matching_configuration_id'] = matching_configuration_id
+        key = request_id or digest(identity)
         with self.store.lock:
             self.store.recover()
             old_event = self.store.receipt(key)
@@ -95,14 +103,70 @@ class Reviewer:
                 fields[k] = decimal_string(fields[k])
             fields['retailer'] = self.config['sources'][candidate['site']]['retailer']
             fields['source_url'] = allowed_url(fields['source_url'], self.config['sources'][candidate['site']])
+            if condition_document is not None:
+                document_path = (self.root / condition_document['evidence_file']).resolve()
+                if (not document_path.is_relative_to((self.root/'staging/evidence').resolve())
+                        or not document_path.is_file()
+                        or hashlib.sha256(document_path.read_bytes()).hexdigest() != condition_document.get('sha256')):
+                    raise ReviewError('Condition evidence document is missing, changed or outside staging/evidence.')
+                document_url = allowed_url(condition_document['source_url'], self.config['sources'][candidate['site']])
+                if document_url != canonical_url(fields['condition_evidence_url']):
+                    raise ReviewError('Condition document URL must match the recorded condition evidence URL.')
+                date.fromisoformat(condition_document['received_date'])
+                if not clean(condition_document.get('facts_observed')):
+                    raise ReviewError('Record the condition document facts and scope.')
+                if action == 'approve' and condition_document.get('supports_new_condition') is not True:
+                    raise ReviewError('This condition document does not confirm new condition for this offer.')
             tables = self.store.canonical()
             duplicate = classify_duplicate(fields, tables['laptops'])
+            if matching_configuration_id is not None:
+                # Explicit same-part reconciliation, never an automatic family
+                # match. Existing facts are retained; only blank fields may fill.
+                matches = [r for r in tables['laptops'] if r['configuration_id'] == matching_configuration_id]
+                if (len(matches) != 1 or confirmations.get('confirm_existing_draft') is not True
+                        or not fields['resolution_notes']):
+                    raise ReviewError('An explicit configuration match requires its ID, confirmation and resolution evidence.')
+                old = matches[0]
+                if (not fields['manufacturer_sku'] or
+                        fields['manufacturer_sku'].casefold() != old['manufacturer_sku'].casefold()):
+                    raise ReviewError('An explicit configuration match requires the same exact manufacturer SKU.')
+                excluded = {'model', 'display_text', 'display_resolution', 'manufacturer_sku'}
+                conflicts = [k for k in HARDWARE_FIELDS if k not in excluded
+                    and old.get(k) and fields.get(k)
+                    and identity_value(k, old[k], old) != identity_value(k, fields[k], fields)]
+                if (old.get('display_resolution') and fields.get('display_resolution')
+                        and old['display_resolution'].replace(' ', '').lower() != fields['display_resolution'].replace(' ', '').lower()):
+                    conflicts.append('display_resolution')
+                def display_label(text):
+                    for label, pattern in [('wqxga', r'\bwqxga\b|2\.5k'),
+                                           ('wuxga', r'\bwuxga\b|\bfhd\+'),
+                                           ('fhd', r'\bfhd\b|full\s*hd'),
+                                           ('uhd', r'\buhd\b|\b4k\b')]:
+                        if re.search(pattern, text, re.I):
+                            return label
+                    return ''
+                a, b = display_label(old.get('display_text','')), display_label(fields.get('display_text',''))
+                if a and b and a != b:
+                    conflicts.append('display_label')
+                for label, pattern in [('panel', r'\b(oled|ips|tn|va)\b'),
+                                       ('touch', r'\b(non[ -]?touch|touch)\b')]:
+                    a = re.search(pattern, old.get('display_text', ''), re.I)
+                    b = re.search(pattern, fields.get('display_text', ''), re.I)
+                    if a and b and re.sub(r'[ -]', '', a[1].lower()) != re.sub(r'[ -]', '', b[1].lower()):
+                        conflicts.append('display_' + label)
+                if conflicts:
+                    raise ReviewError('Explicit matching cannot overwrite contradictory hardware: ' + ', '.join(conflicts))
+                duplicate = dict(kind='exact', matches=matches, fields=[])
             at = now()
             state = {'approve':'approved', 'reject':'rejected', 'needs_review':'needs_review', 'skip':'skipped'}[action]
             event = dict(event_id=key, candidate_id=candidate_id, action=action,
                 state=state, reviewed_by=clean(reviewer), reviewed_at=at,
                 notes=clean(notes), fields=fields, confirmations=confirmations,
                 before_revision=expected_revision, canonical_result={}, notices=[])
+            if condition_document is not None:
+                event['condition_document'] = copy.deepcopy(condition_document)
+            if matching_configuration_id is not None:
+                event['matching_configuration_id'] = matching_configuration_id
             if action == 'approve':
                 assert_complete(fields, confirmations, self.config['sources'][candidate['site']])
                 if candidate.get('evidence_file'):
@@ -113,7 +177,7 @@ class Reviewer:
                 variant = confirmations.get('documented_variant') is True and fields['variant_evidence'] and fields['resolution_notes']
                 if duplicate['kind'] == 'conflict' and not variant:
                     state = event['state'] = 'needs_review'
-                    event['notices'].append('Existing manufacturer SKU has conflicting or incomplete hardware. No laptop or offer was merged. Supply documented variant evidence, or resolve the conflicting record separately.')
+                    event['notices'].append('Existing configuration identity has conflicting, incomplete or ambiguous hardware. No laptop or offer was merged. Supply documented variant evidence, or resolve the conflicting record separately.')
                 elif duplicate['kind'] == 'exact' and duplicate['matches'][0]['record_status'] != 'verified':
                     old = duplicate['matches'][0]
                     if confirmations.get('confirm_existing_draft') is not True or not fields['resolution_notes']:
@@ -123,8 +187,6 @@ class Reviewer:
                         with (self.root/'data'/f'{name}.csv').open(newline='', encoding='utf-8-sig') as f:
                             if any(r['configuration_id'] == old['configuration_id'] for r in csv.DictReader(f)):
                                 raise ReviewError('Existing configuration is referenced by research history; it cannot be promoted/edited here. Use a documented correction workflow.')
-                elif duplicate['kind'] == 'missing_sku':
-                    raise ReviewError('Manufacturer SKU is required for a verified configuration.')
 
             # Skip is a staging-only action. Rejection/needs-review add an evidence record and
             # issue but never a verified laptop/offer. All decisions remain in the audit database.
@@ -143,9 +205,22 @@ class Reviewer:
                     notes=f"Candidate {candidate_id}; review event {key}. Original retrieved URL: {candidate['original_fields']['source_url']}. {notes}. Specification evidence: {fields['specification_evidence']}. New-condition evidence: {fields['condition_evidence']}")
                 tables['source_checks'].append(evidence)
                 event['canonical_result']['evidence_id'] = eid
+                document_eid = None
+                if condition_document is not None:
+                    document_eid = allocate(tables['source_checks'], 'evidence_id', 'SRC')
+                    tables['source_checks'].append(dict(evidence,
+                        evidence_id=document_eid, source_url=document_url,
+                        page_locator='Retailer-message screenshot; ' + candidate_id,
+                        retrieved_date=condition_document['received_date'], access_mode='manual_page',
+                        facts_observed=condition_document['facts_observed'],
+                        evidence_file=condition_document['evidence_file'],
+                        notes='User-supplied retailer conversation, not a fetched website page. '
+                              + 'SHA-256: ' + condition_document['sha256'] + '. '
+                              + condition_document.get('notes', '') + '. ' + notes))
+                    event['canonical_result']['condition_evidence_id'] = document_eid
                 if state == 'approved':
-                    condition_eid = eid
-                    if fields['condition_evidence_url'] != fields['source_url']:
+                    condition_eid = document_eid or eid
+                    if document_eid is None and fields['condition_evidence_url'] != fields['source_url']:
                         condition_eid = allocate(tables['source_checks'], 'evidence_id', 'SRC')
                         tables['source_checks'].append(dict(evidence, evidence_id=condition_eid,
                             source_url=fields['condition_evidence_url'], facts_observed=fields['condition_evidence'], evidence_file=''))

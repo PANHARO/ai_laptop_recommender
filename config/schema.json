@@ -334,7 +334,7 @@
         "name": "required_os",
         "type": "text",
         "required": false,
-        "description": "Explicit delivered-OS requirement; no automatic OS compatibility inference."
+        "description": "Legacy delivered-OS requirement; blank in the confirmed pilot, which uses no OS hard filter. No automatic OS compatibility inference."
       },
       {
         "name": "desired_ram_gb",

@@ -1,0 +1,54 @@
+{
+  "preview_version": "pilot_preview_2026-10-29_v1",
+  "created_at": "2026-10-29T23:09:59.062703+07:00",
+  "mode": "design_preview_not_research_collection",
+  "policy": {
+    "protocol_version": "pilot_decisions_2026-10-29_v1",
+    "confirmed_by": "Ro",
+    "confirmed_date": "2026-10-29",
+    "intended_freeze_date": "2026-10-28",
+    "freeze_date_rule": "After remaining freshness checks are completed",
+    "actual_freeze_date": null,
+    "allow_later_freeze_confirmed_date": "2026-10-29",
+    "timezone": "Asia/Bangkok",
+    "maximum_offer_age_days": 7,
+    "check_date_attestation_file": "staging/evidence/review_dates_2026-10-29/ro_check_date_range.json",
+    "availability_filter": "include_all_report_actual_status",
+    "blank_availability_label": "Availability not stated",
+    "require_active_preference_target": true,
+    "os_eligibility_filter": false,
+    "tasks": [
+      "Documents/presentations",
+      "Web/research",
+      "Online classes",
+      "Coding",
+      "Data analysis",
+      "Graphic design/photo editing",
+      "3D modelling/rendering",
+      "Video editing",
+      "Engineering/CAD",
+      "Games",
+      "Other (please specify)"
+    ],
+    "course_statement": "This study is part of an ITM 360 final project for the course taught by Prof. Kuntha Pin.",
+    "participant_details": [
+      "age_or_age_group",
+      "university_year",
+      "budget",
+      "laptop_needs"
+    ],
+    "collect_names_phones_emails": false,
+    "neutral_cards": "Consistent factual panels; a verified matching product photo may be included, without promotional claims, scores or badges.",
+    "survey_snapshot_created": false,
+    "status": "User-confirmed design decisions; not a study approval or completed freeze."
+  },
+  "source_hashes": {
+    "laptops": "d4df08c722af0764541ef74acd4a5f4bd07a0f08e5a39c62241eb95f8af080cd",
+    "offers": "fe1f49143a3fd74956258ee9fd9d0e36f3aedf997ea01288ebe75039e772db35",
+    "source_checks": "9df06f9db0d76dbc595f8fb462e3cd2a7da10d2aa2db6edea5a8bc7b015c30d5"
+  },
+  "survey_snapshot_created": false,
+  "configuration_count": 51,
+  "offer_count": 60,
+  "html_sha256": "449061ede133bab59668649d8b0688aa81b76f7afa1c7188ac69269f85f99420"
+}

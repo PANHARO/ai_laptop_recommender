@@ -2,7 +2,16 @@
   "title": "Personalized Laptop Recommendation System for Cambodian University Students",
   "source_filename": "AI_project_proposal.docx",
   "source_sha256": "ad82e8501a344cd44073f56e4e07ae60d41ed5822e83d2dbd0a18f6f76d79efd",
-  "methodology_changes": [],
+  "methodology_changes": [
+    {
+      "confirmed_date": "2026-10-29",
+      "confirmed_by": "Ro",
+      "scope": "Pilot protocol",
+      "change": "Remove the delivered-OS hard constraint from the pilot questionnaire and eligibility filters. Preserve actual delivered OS as descriptive offer data; do not assume Windows.",
+      "policy_file": "config/pilot_policy.json",
+      "model_and_evaluation_plan_changed": false
+    }
+  ],
   "schema_version": "0.1",
   "pilot_configuration_working_target": 40,
   "main_configuration_target": [
@@ -66,5 +75,5 @@
     "primary_cohort_min_valid_judgments": 10,
     "bootstrap_paired_student_resamples": 2000
   },
-  "status": "Collection scaffold only; no survey freeze, recruitment, training or evaluation performed."
+  "status": "Pilot imported and exploratory grouped comparison completed; primary ten-judgment cohort unavailable. Main study and a documented survey freeze are not claimed."
 }

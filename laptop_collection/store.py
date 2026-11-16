@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import sqlite3
 import tempfile
+import time
 from contextlib import contextmanager
 from filelock import FileLock
 
@@ -23,7 +24,17 @@ def atomic_bytes(path, data):
     try:
         with os.fdopen(fd, 'wb') as stream:
             stream.write(data); stream.flush(); os.fsync(stream.fileno())
-        os.replace(tmp, path)
+        # Windows file watchers can briefly open CSVs without delete sharing.
+        # Keep atomic replacement and the transaction journal; never fall back
+        # to truncating the destination or bypassing a persistent denial.
+        for attempt in range(7):
+            try:
+                os.replace(tmp, path)
+                break
+            except PermissionError as exc:
+                if getattr(exc, 'winerror', None) not in (5, 32) or attempt == 6:
+                    raise
+                time.sleep(0.05 * (2 ** attempt))
     finally:
         if os.path.exists(tmp):
             os.unlink(tmp)
@@ -50,6 +61,9 @@ class Store:
                 CREATE TABLE IF NOT EXISTS reviews (
                     event_id TEXT PRIMARY KEY, candidate_id TEXT NOT NULL,
                     action TEXT NOT NULL, payload TEXT NOT NULL, reviewed_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS audit_events (
+                    event_id TEXT PRIMARY KEY, payload TEXT NOT NULL, reviewed_at TEXT NOT NULL
                 );
             ''')
         self.recover()
@@ -91,6 +105,11 @@ class Store:
     def receipt(self, event_id):
         with self.connect() as db:
             row = db.execute('SELECT payload FROM reviews WHERE event_id=?', (event_id,)).fetchone()
+        return json.loads(row[0]) if row else None
+
+    def audit_receipt(self, event_id):
+        with self.connect() as db:
+            row = db.execute('SELECT payload FROM audit_events WHERE event_id=?', (event_id,)).fetchone()
         return json.loads(row[0]) if row else None
 
     def reviews(self, candidate_id):
@@ -138,7 +157,10 @@ class Store:
             atomic_bytes(self.root/'data'/f'{name}.csv', base64.b64decode(values['after']))
         event = intent['event']
         with self.connect() as db:
-            if not db.execute('SELECT 1 FROM reviews WHERE event_id=?', (event['event_id'],)).fetchone():
+            if event.get('kind') == 'catalogue_audit':
+                db.execute('INSERT OR IGNORE INTO audit_events VALUES(?,?,?)',
+                    (event['event_id'], json.dumps(event, ensure_ascii=False), event['reviewed_at']))
+            elif not db.execute('SELECT 1 FROM reviews WHERE event_id=?', (event['event_id'],)).fetchone():
                 db.execute('INSERT INTO reviews VALUES(?,?,?,?,?)', (event['event_id'], event['candidate_id'], event['action'], json.dumps(event, ensure_ascii=False), event['reviewed_at']))
                 db.execute('UPDATE candidates SET state=?,revision=revision+1,edited=?,updated_at=? WHERE candidate_id=?',
                     (event['state'], json.dumps(event['fields'], ensure_ascii=False), event['reviewed_at'], event['candidate_id']))

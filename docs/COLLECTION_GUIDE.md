@@ -29,7 +29,10 @@ Use the supplied proposal, especially sections 4.3–4.8, to decide what belongs
 | Unknown values | Blank in CSV, shown as unknown in the eventual interface; a mandatory requirement cannot pass on an unknown |
 | Battery | Not collected in this first core batch. Any later battery field must preserve claimed versus measured evidence; no comparable battery ranking is authorized |
 
-An empty preferred target can mean not sure or not supplied. The questionnaire pilot must define its exact response handling. A zero importance weight is an explicit inactive preference, not missing data. Do not infer technical requirements from major or software names.
+Under the pilot policy confirmed on 29 October 2026, importance above zero
+requires a target before profile submission/assignment. A zero importance weight
+is an explicit inactive preference, not missing data. Ask the participant to
+resolve missing targets; do not infer technical requirements from tasks or software.
 
 ## The first batch needs these checks
 
@@ -50,7 +53,16 @@ Optional fields such as weight need not all be present for catalogue inclusion. 
 
 After protocol approval, copy the verified dataset into a named immutable survey snapshot. Record file hashes, neutral-card version and the exact selected offer for each configuration. Keep `collection_2026-09-28_v0` as collection work, not the final survey version.
 
-Use the lowest verified eligible offer among the collected sources, resolving equal prices by a fixed retailer-name order. Filter all mandatory profile conditions before assignment. The treatment of preorder, check-stock and stale offers must be settled with Ro before freezing the protocol; no new availability rule has been imposed here.
+Use the lowest verified eligible offer among the collected sources, resolving
+equal prices by a fixed retailer-name order. Filter all mandatory profile
+conditions before assignment. The confirmed pilot policy includes every stock
+status, with original wording displayed, including Out of Stock, Coming Soon,
+Check Stock and blank (Availability not stated). It uses no OS hard filter and
+requires exact-offer confirmation within seven days of the actual freeze.
+The original intended date was 28 October 2026; Ro authorized a later actual
+freeze after freshness checks. Preserve observations and actual recheck timestamps;
+later evidence cannot be backdated into this window. See config/pilot_policy.json
+and the protocol for the distinction between intended and actual freeze.
 
 For each participant, select up to 15 eligible configurations across the proposal's price-to-budget bands: at most 0.60, above 0.60 through 0.80, and above 0.80 through 1.00. Initially seek five per band; redistribute unused places without duplicates, prioritize less-exposed configurations and use seeded random selection. Log assignments, exposure counts, selection seeds and randomized display order. These bands are relative to each student's budget; do not replace them with fixed dollar bins for the survey.
 

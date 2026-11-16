@@ -31,9 +31,9 @@ Needs Review saves your edits, notes, reviewer code and review time. Include ski
 
 Skipped items are included in the default queue. Use **Find skipped** in the sidebar to clear retailer/search filters and show only skipped observations. Candidate labels include their saved decision. Reopening an editable review restores its most recently saved factual confirmations and notes. Save receipts and approval errors appear in a fixed corner alert so they remain visible while scrolling.
 
-Manufacturer SKU is mandatory under the current verification and deduplication rules. Keep missing part numbers blank; a shop inventory ID is not a replacement. Warranty duration and placement outside a second-hand category can be recorded as contextual evidence, but do not by themselves establish new condition. A documented retailer statement covering the exact listing or a clearly defined set of listings can support condition verification. Changing these inclusion rules requires an explicit methodology decision and corresponding schema, identity-matching and validation changes.
+Manufacturer SKU is optional under the verification and deduplication rules. Keep missing part numbers blank; a shop inventory ID is not a replacement. When a SKU is available, it remains strong identity evidence. When it is absent, approval requires the complete delivered-hardware fields and the reviewer uses those fields conservatively for identity matching. Warranty duration and placement outside a second-hand category can be recorded as contextual evidence, but do not by themselves establish new condition. A documented retailer statement covering the exact listing or a clearly defined set of listings can support condition verification.
 
-Core approval fields are the existing verified-configuration requirements: brand/model, exact manufacturer SKU, delivered CPU/GPU, RAM, storage capacity/medium and identifiable display, plus the offer's positive finite outright USD price and provenance. Weight, VRAM, exact pixels, GPU type and OS remain optional when the proposal/schema permits missing data. Unknown required-by-profile attributes will still fail the later shared eligibility filter; the review tool does not invent a value or relax that rule. Literal placeholders such as Unknown do not complete a mandatory product field.
+Core approval fields are the existing verified-configuration requirements: brand/model, delivered CPU/GPU, RAM, storage capacity/medium and identifiable display, plus the offer's positive finite outright USD price and provenance. Manufacturer SKU is optional metadata; preserve it when available and leave it blank when unavailable. Weight, VRAM, exact pixels, GPU type and OS remain optional when the proposal/schema permits missing data. Unknown required-by-profile attributes will still fail the later shared eligibility filter; the review tool does not invent a value or relax that rule. Literal placeholders such as Unknown do not complete a mandatory product field.
 
 Catalogue cards are explicitly flagged. Beckie cards have exact shop locators and individual links, but some detail routes may show a generic or unrelated catalogue. Verify the card identity using the shop SKU, and retain Needs Review if the identity or facts cannot be confirmed. Preorder/check-stock/out-of-stock labels are retained, with no new availability eligibility policy introduced.
 
@@ -72,13 +72,67 @@ The authorization reference is retained in staging. This imports supplied bytes 
 
 Candidate identity uses source/site, product URL, UTC observation date and extracted fields. Recollecting the same observation does not overwrite its review or add a second copy. A changed price or a later observation day creates another candidate and, after approval, a new offer ID. No existing offer is updated.
 
-Hardware matching uses supported exact manufacturer SKU and delivered CPU/GPU, RAM, storage and display. Numeric formatting and trademark/prose differences are normalized only for identity comparisons, without assigning performance tiers. Known optional hardware contradictions also trigger a conflict. A shared model family or shop inventory code is insufficient. Conflicting records are not silently merged.
+Hardware matching uses an exact manufacturer SKU when available, with complete delivered CPU/GPU, RAM, storage and display as the fallback when it is absent. Numeric formatting and trademark/prose differences are normalized only for identity comparisons, without assigning performance tiers. Known optional hardware contradictions also trigger a conflict. A shared model family or shop inventory code is insufficient. Conflicting records are not silently merged.
 
 A matching verified configuration is reused without changing its recorded attributes. A matching draft/quarantined configuration requires explicit draft confirmation and resolution notes before promotion; nonempty hardware values and old source rows are preserved. A draft referenced by a rating/assignment cannot be edited/promoted here. Unknown or conflicting hardware requires a documented correction, not an ungrounded approval. A genuinely different delivered hardware variant requires the separate variant confirmation plus evidence/resolution text; it gets a new configuration ID. Do not use that option for price changes, wording differences or uncertain specifications.
 
 The original `config/schema.json`, proposal lock, existing CSV records, validator and participant/profile/assignment files are preserved by this milestone. Nothing from previous chats is silently substituted for the repository's current files. Use the reviewer or collect a current observation to incorporate further corrections.
 
 ## Local audit and recovery
+
+Retained retailer-message screenshots can support condition only for their
+documented scope. The reviewer service accepts an optional `condition_document`
+when an audited import supplies the relative path under `staging/evidence`,
+SHA-256, contextual retailer URL, received date, factual scope and an explicit
+new-condition determination. It validates the saved bytes and retailer, retains
+the document on the review event, and creates a separate source evidence row
+linked through the verified offer's `condition_evidence_id`. A private message
+without a public URL is identified by its retained file; the contextual retailer
+homepage is not represented as the message URL. Screenshot receipt dates do not
+replace product observation dates, and ambiguous documents cannot approve an
+offer. This does not mark any second manual check as passed.
+
+Returned manual second-check CSVs are incorporated by
+`laptop_collection.rechecks.apply_rechecks` against the original exported queue.
+Configuration/offer/source fields must match exactly. Status, reviewer, actual
+timezone-aware timestamp and factual findings are required. The service retains
+the submitted findings, updates the linked source-check metadata and writes a
+separate recoverable catalogue audit event. It does not replace historical
+offer facts, generate candidate reviews or count an AI audit as a human pass.
+
+An explicitly named configuration can also be reconciled during review when
+the exact manufacturer SKU matches, the reviewer confirms the existing record
+and documents the resolution, and no known hardware contradicts it. This
+supports completing missing fields and matching equivalent display wording;
+it does not allow model-family matches, changed RAM/GPU/display, or invented
+variants. Nonempty canonical hardware stays unchanged.
+
+### Review on another laptop without Python
+
+Run `python -m scripts.portable_review export staging/portable-review` to export
+only candidates currently marked `pending`. Copy `START_REVIEW.html` from that
+folder to the other laptop and open it in Chrome or Edge. The file embeds the
+extracted fields and evidence; retailer links need internet. Edit fields and
+record decisions, then use **Download results** regularly and before closing.
+Use **Load saved results** to resume from the downloaded JSON in another browser.
+Browser autosave is a convenience, not the transfer file.
+
+For unresolved saved reviews, add `--state needs_review` to the export command.
+The exported form restores saved factual confirmations, notes and current
+revision numbers. Returning approvals retain the hashed condition document from
+the trusted export manifest when its evidence URL is unchanged.
+
+Return the downloaded `laptop-review-results-*.json` together with the original
+batch identity. Keep the exported `manifest.json` on the home PC. With the
+Streamlit reviewer stopped, preflight the returned decisions using
+`python -m scripts.portable_review check RESULTS.json --manifest staging/portable-review/manifest.json`.
+Use the same command with `apply` instead of `check` to import. Preflight replays
+the whole batch in a temporary copy before any live review writes. Import uses
+the normal evidence, duplicate, revision, schema, transaction and audit checks.
+Identical reimports return the existing receipts; changed or stale reviews are
+refused. Unfinished drafts are retained for browser resumption and are not
+applied as decisions. The export does not include existing `needs_review` items
+or mark pending observations as verified.
 
 SQLite staging holds original extraction payloads, reviewed edits, states and revision numbers. Original evidence is never executed in the UI; displayed content is escaped. Saved raw evidence is hashed, and approval refuses evidence that has changed or disappeared. New condition can have its own checked evidence reference when its URL differs from the product page. Second manual checks remain pending; approval does not claim the proposal's second-pass requirement has been met.
 
@@ -94,6 +148,6 @@ python scripts/validate_data.py
 python scripts/check_validator.py
 ```
 
-Tests use handwritten product HTML fixtures and temporary workspaces, not synthetic student judgments. They exercise all three parsers, prices/units/unknowns, manufacturer versus shop IDs, conflicts and duplicate hardware, review gates/transitions, historical offer preservation, interrupted transaction recovery, access-policy failures, a 40-candidate offline batch, and Streamlit form actions. Live retrieval is a separate smoke command; passing fixture tests does not prove that a retailer is currently accessible.
+Collection tests use handwritten product HTML fixtures and temporary workspaces. Pilot tests use explicitly artificial judgments in temporary test folders; they never add research rows. The suite covers parsers, prices/units/unknowns, manufacturer versus shop IDs, hardware conflicts, review gates, historical offers, transaction recovery, access-policy failures, offline batches, Streamlit forms and grouped evaluation. Passing fixture tests does not prove that a retailer is currently accessible.
 
-Review the source access audit and run report before expanding the pilot collection. The research still needs around 40 manually verified configurations for the pilot, a recorded second manual check of at least 20 percent, the approved questionnaire/consent and the later genuine participant ratings.
+Review the source access audit before expanding collection. The current catalog has 51 verified configurations and 60 dated offers. See the [project overview](../README.md) and [pilot results](../reports/pilot_integration/RESULTS.md) for the completed pilot analysis and its remaining data limitations. Dated readiness reports retain their historical gates; they are not current-price or study-approval certificates.

@@ -1,32 +1,31 @@
 {
   "schema_version": "0.1",
-  "checked_at": "2026-10-19T23:01:33.560301+07:00",
+  "checked_at": "2026-11-16T23:22:25.434759+07:00",
   "structural_validation": "PASS",
   "counts": {
-    "laptops": 7,
-    "offers": 8,
+    "laptops": 53,
+    "offers": 68,
     "students": 0,
     "ratings": 0,
     "assignments": 0,
-    "source_checks": 20,
-    "issues": 16
+    "source_checks": 274,
+    "issues": 183
   },
-  "verified_configurations": 0,
-  "verified_offers": 0,
+  "verified_configurations": 51,
+  "verified_offers": 60,
   "errors": [],
   "warnings": [
     "Draft/quarantined rows are collection work only; exclude them from survey assignments and model data.",
-    "Working pilot catalogue target: 40 verified configurations; currently 0.",
     "Manual review must confirm truth of specs, new condition, source permissions, price validity and second-check coverage; this validator cannot certify those facts.",
     "Candidate balancing, exposure priority, lowest eligible offer selection, frozen snapshot integrity and study approval are later gates, not certified by this scaffold validator."
   ],
   "sha256": {
     "data\\assignments.csv": "aa74a14579f99598a61ff577be84fada5d7e83586c3ac99505f808153a1639b1",
-    "data\\issues.csv": "18f1ad2b0885b7e3389afaf3542ecce1387cd7eedd474d2dce3bdb0f6cbffcc0",
-    "data\\laptops.csv": "eed53c0dbd507adaa1c02d26a019e82a711355139fb1b4b85e4de80ef41e3c42",
-    "data\\offers.csv": "b934e01bebe9e1765fe43cc02b4b5b39fe9862cf23b4449d8cbd9cfca7ff6da2",
+    "data\\issues.csv": "143e0d6dfb88578cef43305115852a215d48352b18d919b3dfe2f7fd94ab012c",
+    "data\\laptops.csv": "d4df08c722af0764541ef74acd4a5f4bd07a0f08e5a39c62241eb95f8af080cd",
+    "data\\offers.csv": "fe1f49143a3fd74956258ee9fd9d0e36f3aedf997ea01288ebe75039e772db35",
     "data\\ratings.csv": "4db53db20705de0fb7cfb8685ab9ab3a83e72d571db9c9816e7f76c486fffe15",
-    "data\\source_checks.csv": "f8dc4694c8b15009ebd9e0017d438ec8f7d3f5da788008182ca9a0956a9c665f",
+    "data\\source_checks.csv": "9df06f9db0d76dbc595f8fb462e3cd2a7da10d2aa2db6edea5a8bc7b015c30d5",
     "data\\students.csv": "f7897587bdfb43b0e9fd04efcdce2f598af936b7cd5f9feee2bfd0ddfcfa66e9"
   }
 }

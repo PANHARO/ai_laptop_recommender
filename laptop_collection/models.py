@@ -16,8 +16,14 @@ OFFER_FIELDS = ('retailer_sku', 'price_usd', 'price_text', 'currency',
 EDIT_FIELDS = HARDWARE_FIELDS + OFFER_FIELDS + ('full_name', 'source_url',
     'manufacturer_sku_evidence', 'specification_evidence', 'condition_evidence',
     'condition_evidence_url', 'resolution_notes', 'variant_evidence')
-CORE_FIELDS = ('brand', 'model', 'manufacturer_sku', 'cpu_model', 'gpu_model',
+CORE_FIELDS = ('brand', 'model', 'cpu_model', 'gpu_model',
                'ram_gb', 'storage_gb', 'storage_type', 'screen_inches', 'display_text')
+# SKU is useful identity evidence when present, but the delivered hardware fields
+# are the fallback identity when a retailer does not publish a manufacturer part
+# number.  Keep this list complete enough to avoid merging underspecified records.
+HARDWARE_IDENTITY_FIELDS = CORE_FIELDS
+MISSING_VALUES = frozenset(('', 'unknown', 'n/a', 'na', 'not sure', 'tbd',
+                            'none', '?', '-', 'not provided', 'not listed'))
 NUMERIC_FIELDS = ('ram_gb', 'storage_gb', 'screen_inches', 'gpu_vram_gb',
                   'refresh_hz', 'weight_kg', 'price_usd')
 
@@ -86,6 +92,16 @@ def hardware_key(fields):
     return tuple(identity_value(k, fields.get(k), fields) for k in keys)
 
 
+def hardware_key_without_sku(fields):
+    return tuple(identity_value(k, fields.get(k), fields) for k in HARDWARE_IDENTITY_FIELDS)
+
+
+def has_complete_hardware_identity(fields):
+    return all(clean(fields.get(k)).casefold() not in MISSING_VALUES
+               and identity_value(k, fields.get(k), fields)
+               for k in HARDWARE_IDENTITY_FIELDS)
+
+
 def identity_value(key, value, fields=None):
     if key in NUMERIC_FIELDS:
         return decimal_string(value)
@@ -108,17 +124,41 @@ def identity_value(key, value, fields=None):
     return clean(text)
 
 
+def hardware_conflicts(old, fields):
+    # Model-family wording can differ for an exact SKU. Compare every other
+    # hardware value known on both sides, including optional specifications.
+    return [k for k in HARDWARE_FIELDS if k != 'model' and old.get(k) and fields.get(k)
+            and identity_value(k, old[k], old) != identity_value(k, fields[k], fields)]
+
+
 def classify_duplicate(fields, laptops):
     sku = clean(fields.get('manufacturer_sku')).casefold()
-    if not sku:
-        return dict(kind='missing_sku', matches=[])
-    same = [r for r in laptops if clean(r['manufacturer_sku']).casefold() == sku]
+    same = [r for r in laptops if sku and clean(r.get('manufacturer_sku')).casefold() == sku]
     exact = [r for r in same if hardware_key(r) == hardware_key(fields)]
     if len(exact) == 1:
         # Optional known attributes must not be silently overwritten or contradicted.
-        old = exact[0]
-        conflicts = [k for k in HARDWARE_FIELDS if k != 'model' and old.get(k) and fields.get(k)
-                     and identity_value(k,old[k],old) != identity_value(k,fields[k],fields)]
+        conflicts = hardware_conflicts(exact[0], fields)
         return dict(kind='conflict' if conflicts else 'exact', matches=exact, fields=conflicts)
-    return dict(kind='conflict' if same else 'new', matches=same,
-                fields=['manufacturer_sku identifies existing hardware with different or incomplete specifications'] if same else [])
+    if same:
+        return dict(kind='conflict', matches=same,
+                    fields=['manufacturer_sku identifies existing hardware with different, incomplete or ambiguous specifications'])
+    # When either side lacks a SKU, use the complete delivered-hardware identity.
+    # A partial record never qualifies as an exact match and therefore cannot
+    # silently merge with another configuration.
+    hardware_matches = []
+    if has_complete_hardware_identity(fields):
+        hardware_matches = [r for r in laptops
+                            if has_complete_hardware_identity(r)
+                            and hardware_key_without_sku(r) == hardware_key_without_sku(fields)]
+    if len(hardware_matches) == 1:
+        old = hardware_matches[0]
+        old_sku = clean(old.get('manufacturer_sku')).casefold()
+        if sku and old_sku and sku != old_sku:
+            return dict(kind='conflict', matches=hardware_matches,
+                        fields=['complete hardware matches an existing configuration with a different manufacturer SKU'])
+        conflicts = hardware_conflicts(old, fields)
+        return dict(kind='conflict' if conflicts else 'exact', matches=hardware_matches, fields=conflicts)
+    if len(hardware_matches) > 1:
+        return dict(kind='conflict', matches=hardware_matches,
+                    fields=['complete hardware identity matches multiple configurations'])
+    return dict(kind='new', matches=[], fields=[])

@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-28",
+  "status": "DRAFT_NOT_READY_FOR_PARTICIPANTS",
+  "target_verified_configurations": 40,
+  "verified_configurations_with_offers": 51,
+  "configurations_still_needed": 0,
+  "verified_offers": 60,
+  "queue_states": {
+    "approved": 60,
+    "needs_review": 3
+  },
+  "verified_offers_by_retailer": {
+    "Gold One Computer": 18,
+    "PTC Computer": 21,
+    "Beckie Khmer": 21
+  },
+  "second_checks": {
+    "passed_configurations": 11,
+    "required_for_current_catalogue": 11,
+    "required_at_target": 8,
+    "proposed_queue_count": 11,
+    "status": "count_satisfied_review_coverage"
+  },
+  "unresolved_gates": [
+    "availability and offer-age policies",
+    "task/OS vocabulary and unknown-target handling",
+    "instrument/card/consent approval and study approvals",
+    "immutable survey snapshot"
+  ],
+  "research_rows": {
+    "students": 0,
+    "ratings": 0,
+    "assignments": 0
+  },
+  "survey_snapshot_created": false,
+  "recruitment_started": false,
+  "models_trained": false,
+  "notes": [
+    "QA price thirds are descriptive coverage strata, not the proposal's participant budget-relative assignment bands.",
+    "Representative offers are for QA only; no offer is asserted eligible before availability/age policy is approved.",
+    "AI desk review has not been counted as a second manual human check."
+  ]
+}

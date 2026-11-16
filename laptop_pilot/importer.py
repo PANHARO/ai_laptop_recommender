@@ -12,7 +12,7 @@ from .catalogue import load_catalogue, sha256, unique_index
 from .ranking import eligibility, number, profile_errors
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CATALOGUE = ROOT / "config/pilot/recovered_catalogue.json"
+DEFAULT_CATALOGUE = ROOT / "data/pilot_catalogue.json"
 
 
 def private_path(path):

@@ -58,11 +58,13 @@ class IntegrityChecks(unittest.TestCase):
         write(self.root, 'ratings', [r])
         self.assertEqual(self.errors(), '')
 
-    def test_starter_structure(self):
+    def test_current_catalogue_structure(self):
         result = validate(self.root)
         self.assertEqual(result['errors'], [])
-        self.assertEqual(result['verified_configurations'], 0)
-        self.assertEqual(result['counts']['ratings'], 0)
+        _, laptops = read(ROOT, 'laptops')
+        _, ratings = read(ROOT, 'ratings')
+        self.assertEqual(result['verified_configurations'], sum(r['record_status'] == 'verified' for r in laptops))
+        self.assertEqual(result['counts']['ratings'], len(ratings))
 
     def test_zero_and_nonfinite_prices(self):
         _, rows = read(self.root, 'offers')
@@ -74,6 +76,20 @@ class IntegrityChecks(unittest.TestCase):
 
     def test_duplicate_configuration_different_id(self):
         _, rows = read(self.root, 'laptops')
+        duplicate = dict(rows[0], configuration_id='LAP9999')
+        write(self.root, 'laptops', rows + [duplicate])
+        self.assertIn('duplicate configuration signature', self.errors())
+
+    def test_verified_configuration_without_sku_supports_ratings_and_assignments(self):
+        self.synthetic_response()
+        _, rows = read(self.root, 'laptops')
+        rows[0]['manufacturer_sku'] = ''
+        write(self.root, 'laptops', rows)
+        self.assertEqual(self.errors(), '')
+
+    def test_duplicate_configuration_without_sku_is_rejected(self):
+        _, rows = read(self.root, 'laptops')
+        rows[0]['manufacturer_sku'] = ''
         duplicate = dict(rows[0], configuration_id='LAP9999')
         write(self.root, 'laptops', rows + [duplicate])
         self.assertIn('duplicate configuration signature', self.errors())
@@ -111,6 +127,34 @@ class IntegrityChecks(unittest.TestCase):
         rows[0]['weight_kg'] = ''
         write(self.root, 'laptops', rows)
         self.assertIn('missing or failing mandatory max_weight_kg', self.errors())
+
+    def test_confirmed_policy_requires_active_preference_target(self):
+        self.synthetic_response()
+        _, rows = read(self.root, 'students')
+        rows[0]['importance_ram'] = '3'
+        write(self.root, 'students', rows)
+        self.assertIn('active ram importance requires a target', self.errors())
+        rows[0]['desired_ram_gb'] = '16'
+        write(self.root, 'students', rows)
+        self.assertEqual(self.errors(), '')
+
+    def test_confirmed_policy_keeps_os_descriptive(self):
+        self.synthetic_response()
+        _, rows = read(self.root, 'offers')
+        rows[0]['delivered_os'] = 'DOS'
+        write(self.root, 'offers', rows)
+        self.assertEqual(self.errors(), '')
+        _, rows = read(self.root, 'students')
+        rows[0]['required_os'] = 'Windows 11 Home'
+        write(self.root, 'students', rows)
+        self.assertIn('required_os must be blank', self.errors())
+
+    def test_pilot_os_change_does_not_silently_change_main_policy(self):
+        self.synthetic_response()
+        _, rows = read(self.root, 'students')
+        rows[0].update(study_phase='main', required_os='TEST_OTHER_OS')
+        write(self.root, 'students', rows)
+        self.assertIn('mandatory delivered OS needs an exact verified match', self.errors())
 
 
 if __name__ == '__main__':

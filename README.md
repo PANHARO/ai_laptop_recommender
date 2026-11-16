@@ -1,109 +1,105 @@
-# Personalized Laptop Recommendation System for Cambodian University Students
+# Student laptop recommender
 
-## Pilot analysis — 16 November 2026
+ITM 360 project for Cambodian university students. The project includes a local
+laptop collection/review desk and a private pilot-analysis pipeline comparing
+ascending price, weighted content matching, Random Forest and a small MLP.
 
-See [PILOT_README.md](PILOT_README.md) for the integrated ITM360 ZIP import and
-[the pilot findings](reports/pilot_integration/RESULTS.md). The original price
-baseline is reproduced, all 51 survey cards have verified historical offer
-links, and the four methods have a separate exploratory grouped comparison.
-The primary ten-judgment cohort is empty after full eligibility checks.
-Participant rows, splits and models remain local under ignored `private/`.
-The collection milestone descriptions below record the earlier project stage.
+The catalog contains **51 verified configurations and 60 verified dated offers**.
+The pilot ZIP's original budget-only price baseline is reproduced exactly:
+**NDCG@5 0.597232** for ten students. All 51 survey cards have verified links to
+the offers actually displayed.
 
-ITM-360 implementation, milestone 1. Prepared 28 September 2026 from the supplied `AI_project_proposal.docx`. The proposal is the source of truth. Its SHA-256 is recorded in `config/proposal_lock.json` so later work can identify the exact version used.
+After the full eligibility rules and incomplete-profile exclusions, no students
+have ten eligible judgments. The separate exploratory comparison has seven
+students and only two held out; it does not establish a model advantage.
+Read [the results](reports/pilot_integration/RESULTS.md).
 
-This repository contains the dataset structure, public HTML collectors, a separate staging queue, a local Streamlit verification desk and a runnable validator. The collection milestone supports human review of extracted candidates; it does not complete the pilot catalogue. No research method has been changed, no participants have been recruited, and no model has been trained.
+## Setup and review
 
-## Start here
-
-Open the repository folder in VS Code. Use Python 3.11 or newer. On Windows PowerShell, create a local environment and run the first batch without activating scripts:
+Use Python 3.11 or newer for collection. On Windows:
 
 ```powershell
 py -m venv .venv
 .\.venv\Scripts\python -m pip install -r requirements.txt
-.\.venv\Scripts\python -m laptop_collection collect --site all --limit 3
 .\.venv\Scripts\python -m laptop_collection review
 ```
 
-On Linux/macOS, use `python3 -m venv .venv`, then use `.venv/bin/python` for the same commands. Open the localhost URL printed by Streamlit. Click **Open laptop source**, edit the fields and evidence, then choose **Approve**, **Reject**, **Needs Review** or **Skip**. Approval requires your explicit new-condition, exact-SKU, delivered-specification and outright-price checks. Missing information remains visible and cannot be silently completed.
+Open the localhost address printed by Streamlit, or double-click
+`START_REVIEW.cmd` after setup. The review queue and retained evidence live in
+ignored `staging/`; a fresh clone starts with an empty queue. Verified catalog
+CSVs are shared, but raw evidence and the local review database are not.
 
-See [the collection and review workflow](docs/COLLECTION_WORKFLOW.md) for larger batches, manual URL imports, authorized exports, duplicate handling and recovery. [The access audit](docs/SOURCE_ACCESS_AUDIT.md) records what was inspected for each retailer. The existing [collection guide](docs/COLLECTION_GUIDE.md) and [data dictionary](docs/DATA_DICTIONARY.md) remain the canonical research rules.
+To collect a small batch or inspect the queue:
 
-[Milestone verification results](reports/COLLECTION_MILESTONE.md) include actual per-site smoke counts, test results and outstanding manual checks.
-
-To queue the old CSV observations and source-only leads (including SRC0009) for inspection without visiting any website, run `python -m laptop_collection seed-existing`. These remain dated historical observations, not fresh price confirmations. The collected candidates and saved reviews live locally under ignored `staging/`; they are not automatically shared with GitHub.
-
-Run the existing validator after a review batch while the reviewer is stopped. The validator itself still uses only the Python standard library:
-
-```bash
-python scripts/validate_data.py --write-report
+```powershell
+.\.venv\Scripts\python -m laptop_collection collect --site all --limit 3
+.\.venv\Scripts\python -m laptop_collection status
 ```
 
-On a system where Python is named `python3`, use `python3` in that same command. It also works in PowerShell without Bash line continuations.
+The collector checks configured source-access rules. Approval requires human
+verification of the exact hardware, outright price and new condition. Unknowns
+stay unknown; a changed price becomes a new dated offer. See the
+[collection workflow](docs/COLLECTION_WORKFLOW.md) for review, manual imports,
+portable review files, evidence and recovery.
 
-The validator separates a structurally valid dataset from verified research data. A PASS means IDs, types and implemented relationships passed. Read the warnings and verified counts as well.
+## Pilot analysis
 
-## Current collection status
+Use a separate Python 3.12 environment for TensorFlow:
 
-| Item | Count | Meaning |
-|---|---:|---|
-| Provisional configuration records | 7 | Five draft and two quarantined |
-| Dated offer observations | 8 | Five draft and three quarantined |
-| Source references | 9 | Includes one excluded zero-price lead |
-| Verified configurations and offers | 0 | Manual checks and explicit new-condition evidence remain open |
-| Students, ratings and assignments | 0 | Empty templates, with no invented research records |
+```powershell
+py -3.12 -m venv .venv-pilot
+.\.venv-pilot\Scripts\python -m pip install -r requirements-pilot.txt
+.\.venv-pilot\Scripts\python -m laptop_pilot reproduce-price C:\Users\Pc\Downloads\ITM360_Laptop_Pilot.zip
+.\.venv-pilot\Scripts\python -m laptop_pilot import C:\Users\Pc\Downloads\ITM360_Laptop_Pilot.zip
+```
 
-This is a small schema-checking batch, not a representative sample or a completed pilot. It includes direct page retrieval, catalogue cards and one quarantined indexed listing. The retrieval date is not a guarantee of current price or stock. All prices require review before participant use.
+Use the printed dataset directory with `python -m laptop_pilot compare` in the
+pilot venv. The [pilot guide](docs/PILOT.md) covers the primary and exploratory
+runs, validation, historical source recovery and offline design preview.
 
-## Data organization
+## Project files
 
-| File | One row represents |
+| Location | Purpose |
 |---|---|
-| `data/laptops.csv` | One exact hardware configuration |
-| `data/offers.csv` | One retailer's dated purchase offer for a configuration |
-| `data/students.csv` | One anonymous participant profile in its study phase |
-| `data/ratings.csv` | One genuine response to a displayed configuration and offer |
-| `data/assignments.csv` | One candidate card selected and ordered for a participant |
-| `data/source_checks.csv` | One evidence reference and its manual review history |
-| `data/issues.csv` | One inclusion, exclusion, correction or unresolved issue |
+| `laptop_collection/` and `review_app.py` | Collection, verification and local review UI |
+| `laptop_pilot/` | Import, shared eligibility, rankers and student-grouped evaluation |
+| `data/` | Catalog CSVs, participant-free historical pilot snapshot and empty participant templates |
+| `config/` | Schema, source access, proposal settings and pilot import/policy |
+| `scripts/` | Validation, offline review exports and preview generation |
+| `tests/` | Artificial fixtures and regression tests |
+| `docs/` and `reports/` | Guides, dated audits and aggregate findings |
+| `staging/` and `private/` | Ignored local evidence, participant data and model outputs |
 
-`docs/DATA_DICTIONARY.md` describes every column. `config/schema.json` gives the validator the same definitions. Delivered OS is stored on offers because shops may deliver different OS packages for identical hardware. This placement preserves the proposal's verified delivered-OS constraint.
+The exact hardware configuration and dated offer are separate records.
+Historical ratings must retain their original offer; never substitute today's
+lowest price. IDs, retailer names, URLs and comments are not model features.
+The [data dictionary](docs/DATA_DICTIONARY.md) defines columns and units.
+Dated protocol drafts and readiness reports describe their historical stage;
+the pilot results above describe the current analysis.
 
-Join offers to laptops on `configuration_id`. Join each rating to its original `offer_id`, participant and assignment. Never join a historical rating to today's lowest price. A shop inventory code is not a manufacturer SKU. Multiple offers are allowed for one configuration; recommendations must still show each configuration once.
+## Checks
 
-## Methodology preserved
+```powershell
+.\.venv\Scripts\python -m unittest discover -s tests -v
+.\.venv\Scripts\python scripts/validate_data.py
+.\.venv\Scripts\python scripts/check_validator.py
+.\.venv-pilot\Scripts\python -m unittest discover -s tests -p test_pilot_integration.py -v
+```
 
-The four methods remain ascending price, weighted content matching, Random Forest regression and a small MLP. All apply the same hard eligibility filter. The target remains a real student's suitability rating from 1 to 5. IDs, retailers, source URLs, comments and future prices are excluded from predictors.
+Pilot tests are skipped when the optional ML dependencies are absent. A
+structural validator PASS does not certify current prices, stock, research
+approval or model quality.
 
-The main targets remain 150–250 configurations, about 50 complete students, and 500–1,000 genuine ratings, with up to 15 judged configurations per student. The separate pilot targets about 10 adults and a working catalogue of 40 configurations. Forty fits both pilot ranges appearing in the proposal.
+## Keep participant data local
 
-Evaluation remains approximately 20 percent held-out students, five-fold grouped development validation, student-level NDCG@5 with linear gain `rating - 1`, and the proposal's secondary outcomes. Random Forest uses 310 trees; the MLP uses 33 and 16 hidden units. These unusual but explicit values are preserved in the configuration record.
+The ZIP, participant rows, splits, training histories, predictions and fitted
+models belong under ignored `private/`. The `data/students.csv`, `ratings.csv`
+and `assignments.csv` files remain header-only templates. Consent/contact
+administration stays outside the model repository.
 
-No numerical CPU/GPU tier, comparable battery ranking, synthetic preference label, extra recommender or different split has been added. Changes to sampling, labels, feature semantics, baseline weights, models or evaluation require discussion with Ro before implementation.
+Enable the included staged-data check on a new clone:
 
-## Milestones and completion gates
-
-| Milestone | Completion gate | Status |
-|---|---|---|
-| 1. Dataset design and initial collection | Linked schema, documented units and provenance, first sourced batch, tested structural validator | Starter implemented; verification and collection continue |
-| 2. Pilot catalogue and questionnaire | Around 40 verified configurations; approved consent and instrument; separate pilot with about 10 adults | Next |
-| 3. Main collection and freeze | 150–250 configurations where feasible; genuine ratings; documented exclusions and frozen snapshots | Pending |
-| 4. Shared constraints and baselines | Same candidates and deterministic ties for price/content methods; boundary checks | Pending |
-| 5. Random Forest and MLP | Grouped splits, fold-local preprocessing, student weights, histories and development-only selection | Pending |
-| 6. Streamlit and locked evaluation | Shared pipeline, factual explanations, final comparison, usability and reporting | Pending |
-
-The next hands-on batch is to verify the first ten complete configurations, including the resolvable entries here, then expand to the working target of 40. Recheck at least 20 percent of retained records across sources and price bands. This is a second manual pass, not automatically a second researcher.
-
-## Decisions to discuss before the pilot is frozen
-
-The proposal leaves task vocabulary, handling an active preference with an unknown target, availability eligibility (for example check-stock or preorder), and exact OS matching vocabulary to protocol work. This scaffold records the underlying facts but does not choose those policies. The validator flags missing preference targets; it uses conservative exact OS matching only when checking an assignment. No survey assignments are generated here.
-
-Source access conditions must be checked before automating collection. The new optional collectors recheck public robots/terms pages, use bounded public HTML requests and keep every extraction unverified in staging. Human approval remains separate. Instructor approval and any required institutional review must precede recruitment, as specified in the proposal.
-
-## Verification and limits
-
-Run `python scripts/check_validator.py` to repeat the focused integrity checks. The tests use clearly artificial records in temporary folders and never add them to the research dataset.
-
-The included report records current CSV hashes. These identify the supplied data files; they do not prove that a retailer claim is correct and do not constitute the later survey freeze. No independently measured laptop performance, manufacturer corroboration, manual second-pass review or human preference data is claimed.
-
-Keep contact details and consent-administration documents outside the model repository. Public release of any later human records must follow the proposal's consent and disclosure provisions.
+```powershell
+git config --local core.hooksPath .githooks
+python -m laptop_pilot guard-index
+```
