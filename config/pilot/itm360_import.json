@@ -1,0 +1,16 @@
+{
+  "students_member": "pilot_profiles.csv",
+  "ratings_member": "pilot_judgments.csv",
+  "cards_member": "pilot_cards.csv",
+  "students_columns": {},
+  "ratings_columns": {"configuration_id": "card_id", "rating_status": "status"},
+  "study_phase": "pilot",
+  "instrument_version": "google_forms_pilot_v2_51configs",
+  "consent_attestation": "The original bundle README states that all source submission rows had adult, current-student consent. Consent fields and tasks are absent from this cleaned export; do not invent questionnaire answers.",
+  "rating_status_values": {
+    "rated": "rated",
+    "skipped": "skipped",
+    "unable_to_judge": "unable_to_judge",
+    "reported_ineligible": "not_eligible"
+  }
+}

@@ -11,3 +11,9 @@ staging/*
 private/
 consent_admin/
 *.log
+
+# Human-response imports, raw bundles, split IDs, fitted models and predictions.
+.venv-pilot/
+ITM360_Laptop_Pilot*.zip
+**/ITM360_Laptop_Pilot*/
+pilot_private/

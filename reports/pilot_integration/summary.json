@@ -1,0 +1,194 @@
+{
+  "date": "2026-11-16",
+  "bundle_sha256": "f6910fffafaf555a1eda704f2a54453f45aca178bf4af808b4d10e41e82d1037",
+  "original_price_script_reproduced": true,
+  "independent_baseline_matches_original": true,
+  "price_baseline": {
+    "scope": "Exploratory ascending price on judged cards, with the budget constraint only",
+    "participants_after_deduplication": 25,
+    "participants_with_numeric_ratings": 23,
+    "cards_with_numeric_ratings": 51,
+    "numeric_ratings": 250,
+    "within_budget_numeric_ratings": 187,
+    "over_budget_numeric_ratings": 63,
+    "students_with_within_budget_ratings": 21,
+    "cohorts_by_minimum_judgment_count": {
+      "2": {
+        "students_meeting_threshold": 20,
+        "students_scored": 19,
+        "students_with_zero_ideal_gain": 1,
+        "mean_student_ndcg_at_5": 0.7139838141762228
+      },
+      "10": {
+        "students_meeting_threshold": 10,
+        "students_scored": 10,
+        "students_with_zero_ideal_gain": 0,
+        "mean_student_ndcg_at_5": 0.5972316214492109
+      }
+    }
+  },
+  "verified_survey_links": 51,
+  "unresolved_survey_links": 0,
+  "excluded_noncard_ids": {
+    "LAP0003": "draft",
+    "LAP0006": "quarantined"
+  },
+  "profiles_missing_active_targets": 9,
+  "full_eligibility_numeric_before_profile_exclusions": 47,
+  "primary_comparison": "unavailable: zero complete eligible profiles with at least ten judgments",
+  "exploratory": {
+    "cohort_students": 7,
+    "cohort_ratings": 25,
+    "development_students": 5,
+    "held_out_students": 2,
+    "development_ratings": 18,
+    "held_out_ratings": 7,
+    "development_selection_scores": {
+      "ascending_price": {
+        "students": 5,
+        "ndcg_at_5": 0.9186617857075354,
+        "ndcg_at_5_students": 5,
+        "precision_at_5": 0.6,
+        "precision_at_5_students": 1,
+        "precision_at_available_k": 0.7366666666666667,
+        "precision_at_available_k_students": 5,
+        "mae": null,
+        "mae_students": 0
+      },
+      "weighted_content": {
+        "students": 5,
+        "ndcg_at_5": 0.9600042573702164,
+        "ndcg_at_5_students": 5,
+        "precision_at_5": 0.6,
+        "precision_at_5_students": 1,
+        "precision_at_available_k": 0.7366666666666667,
+        "precision_at_available_k_students": 5,
+        "mae": null,
+        "mae_students": 0
+      },
+      "random_forest": {
+        "students": 5,
+        "ndcg_at_5": 0.9946824404244413,
+        "ndcg_at_5_students": 5,
+        "precision_at_5": 0.6,
+        "precision_at_5_students": 1,
+        "precision_at_available_k": 0.7366666666666667,
+        "precision_at_available_k_students": 5,
+        "mae": 0.38317425175820935,
+        "mae_students": 5
+      },
+      "small_mlp": {
+        "students": 5,
+        "ndcg_at_5": 0.9786533901418036,
+        "ndcg_at_5_students": 5,
+        "precision_at_5": 0.6,
+        "precision_at_5_students": 1,
+        "precision_at_available_k": 0.7366666666666667,
+        "precision_at_available_k_students": 5,
+        "mae": 7.85923078695933,
+        "mae_students": 5
+      }
+    },
+    "held_out_scores": {
+      "ascending_price": {
+        "students": 2,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_5_students": 2,
+        "precision_at_5": 0.8,
+        "precision_at_5_students": 1,
+        "precision_at_available_k": 0.65,
+        "precision_at_available_k_students": 2,
+        "mae": null,
+        "mae_students": 0
+      },
+      "weighted_content": {
+        "students": 2,
+        "ndcg_at_5": 0.9914460409783439,
+        "ndcg_at_5_students": 2,
+        "precision_at_5": 0.8,
+        "precision_at_5_students": 1,
+        "precision_at_available_k": 0.65,
+        "precision_at_available_k_students": 2,
+        "mae": null,
+        "mae_students": 0
+      },
+      "random_forest": {
+        "students": 2,
+        "ndcg_at_5": 0.8370205803536289,
+        "ndcg_at_5_students": 2,
+        "precision_at_5": 0.8,
+        "precision_at_5_students": 1,
+        "precision_at_available_k": 0.65,
+        "precision_at_available_k_students": 2,
+        "mae": 0.8833370285354321,
+        "mae_students": 2
+      },
+      "small_mlp": {
+        "students": 2,
+        "ndcg_at_5": 0.8370205803536289,
+        "ndcg_at_5_students": 2,
+        "precision_at_5": 0.8,
+        "precision_at_5_students": 1,
+        "precision_at_available_k": 0.65,
+        "precision_at_available_k_students": 2,
+        "mae": 3.396214246749878,
+        "mae_students": 2
+      }
+    },
+    "paired_ndcg_differences": {
+      "random_forest_minus_weighted_content": {
+        "mean_delta": -0.15442546062471496,
+        "exploratory_95_percent_interval": [
+          -0.2222525137209842,
+          -0.08659840752844572
+        ],
+        "student_resamples": 2000
+      },
+      "small_mlp_minus_weighted_content": {
+        "mean_delta": -0.15442546062471496,
+        "exploratory_95_percent_interval": [
+          -0.2222525137209842,
+          -0.08659840752844572
+        ],
+        "student_resamples": 2000
+      },
+      "small_mlp_minus_random_forest": {
+        "mean_delta": 0.0,
+        "exploratory_95_percent_interval": [
+          0.0,
+          0.0
+        ],
+        "student_resamples": 2000
+      }
+    },
+    "default_learned_ranker": "random_forest",
+    "forest_selected_parameters": {
+      "max_depth": 4,
+      "min_samples_leaf": 3,
+      "max_features": 1.0
+    },
+    "mlp_fold_best_epochs": [
+      13,
+      60,
+      26,
+      42,
+      1
+    ],
+    "mlp_refit_epochs": 26,
+    "limitations": [
+      "Pilot only; no claim of main-study performance or a usable production model.",
+      "Development scores are used for selection, not an independent estimate.",
+      "Evaluates only genuinely rated eligible historical cards, not unrated catalogue items.",
+      "The exported profiles omit task answers; no task labels were reconstructed.",
+      "Very small held-out sample; paired intervals are exploratory.",
+      "No primary result exists unless students have at least ten eligible judgments."
+    ]
+  },
+  "environment": {
+    "python": "3.12.3 (tags/v3.12.3:f6650f9, Apr  9 2024, 14:05:25) [MSC v.1938 64 bit (AMD64)]",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "numpy": "2.2.6",
+    "sklearn": "1.7.2",
+    "tensorflow": "2.20.0"
+  }
+}

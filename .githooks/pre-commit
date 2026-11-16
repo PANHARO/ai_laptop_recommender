@@ -1,0 +1,3 @@
+#!/bin/sh
+# No ML dependencies needed; read the staged versions, not working files.
+python -m laptop_pilot guard-index

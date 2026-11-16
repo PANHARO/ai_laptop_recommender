@@ -1,5 +1,15 @@
 # Personalized Laptop Recommendation System for Cambodian University Students
 
+## Pilot analysis — 16 November 2026
+
+See [PILOT_README.md](PILOT_README.md) for the integrated ITM360 ZIP import and
+[the pilot findings](reports/pilot_integration/RESULTS.md). The original price
+baseline is reproduced, all 51 survey cards have verified historical offer
+links, and the four methods have a separate exploratory grouped comparison.
+The primary ten-judgment cohort is empty after full eligibility checks.
+Participant rows, splits and models remain local under ignored `private/`.
+The collection milestone descriptions below record the earlier project stage.
+
 ITM-360 implementation, milestone 1. Prepared 28 September 2026 from the supplied `AI_project_proposal.docx`. The proposal is the source of truth. Its SHA-256 is recorded in `config/proposal_lock.json` so later work can identify the exact version used.
 
 This repository contains the dataset structure, public HTML collectors, a separate staging queue, a local Streamlit verification desk and a runnable validator. The collection milestone supports human review of extracted candidates; it does not complete the pilot catalogue. No research method has been changed, no participants have been recruited, and no model has been trained.

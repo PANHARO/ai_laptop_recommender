@@ -1,0 +1,22 @@
+{
+  "source_catalogue_file": "form_v2_catalogue.json",
+  "displayed_card_file": "form_v2_display.json",
+  "source_catalogue_sha256": "49847fa5844a1fd58d1c50919033237feb4b5ce66c1f192ea0a67b45cfcbfa3e",
+  "displayed_card_sha256": "a89fc34617374356d2216c01216946c378f66694d3c4fae28eacba14f09b2675",
+  "upstream_app_catalogue_file": "lib/catalogue.json",
+  "upstream_app_catalogue_sha256": "0d3e1bb6dac581309d85e0a4b12f6ba955d1c2faf583d0b7ea3ce6cdffe20044",
+  "recorded_upstream_source_hashes": {
+    "laptops": "d4df08c722af0764541ef74acd4a5f4bd07a0f08e5a39c62241eb95f8af080cd",
+    "offers": "fe1f49143a3fd74956258ee9fd9d0e36f3aedf997ea01288ebe75039e772db35",
+    "source_checks": "9df06f9db0d76dbc595f8fb462e3cd2a7da10d2aa2db6edea5a8bc7b015c30d5"
+  },
+  "current_canonical_hashes": {
+    "laptops": "d4df08c722af0764541ef74acd4a5f4bd07a0f08e5a39c62241eb95f8af080cd",
+    "offers": "fe1f49143a3fd74956258ee9fd9d0e36f3aedf997ea01288ebe75039e772db35",
+    "source_checks": "9df06f9db0d76dbc595f8fb462e3cd2a7da10d2aa2db6edea5a8bc7b015c30d5"
+  },
+  "all_upstream_hashes_match": true,
+  "proposal_sha256": "ad82e8501a344cd44073f56e4e07ae60d41ed5822e83d2dbd0a18f6f76d79efd",
+  "proposal_matches_lock": true,
+  "participant_data_included": false
+}

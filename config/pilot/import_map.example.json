@@ -1,0 +1,15 @@
+{
+  "students_member": "students.csv",
+  "ratings_member": "ratings.csv",
+  "students_columns": {},
+  "ratings_columns": {},
+  "study_phase": "pilot",
+  "instrument_version": "google_forms_pilot_v2_51configs",
+  "rating_status_values": {
+    "rated": "rated",
+    "skipped": "skipped",
+    "unable_to_judge": "unable_to_judge",
+    "not_eligible": "not_eligible",
+    "unanswered": "unanswered"
+  }
+}

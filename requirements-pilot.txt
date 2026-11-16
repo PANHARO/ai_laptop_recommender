@@ -1,0 +1,4 @@
+# Separate from collection dependencies. TensorFlow supports Python 3.11-3.13.
+numpy>=1.26,<2.3
+scikit-learn==1.7.2
+tensorflow==2.20.0
